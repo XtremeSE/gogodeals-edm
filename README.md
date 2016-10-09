@@ -1,1 +1,1 @@
-# gogodeals-edm
+# GogoDeals Database Controller
