@@ -7,34 +7,38 @@
 %% API functions
 %%====================================================================
 
-start() -> spawn(fun () -> init() end).
+%start() -> spawn(fun () -> init() end).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-init() -> 
-	{ok, Client} = emqttc:start_link([{host, "176.10.136.208"}, {client_id, <<"simpleClient">>}, {proto_ver, 3}]),
-	emqttc:subscribe(Client, [{<<"web/deal/new">>, 1},
-					{<<"web/deal/edit">>, 1},
-					{<<"web/deal/delete">>, 1},
-					{<<"web/user/register">>, 1},
-					{<<"web/user/edit">>, 1},
-					{<<"web/user/delete">>, 1},
-					{<<"app/deal/save">>, 1},
-					{<<"app/deal/delete">>, 1},
-					{<<"app/deal/verify">>, 1},
-					{<<"app/user/new">>, 1},
-					{<<"app/user/filter">>, 1}]),
+start() ->
+	{ok, Client} = emqttc:start_link([{host, "176.10.136.208"},{client_id, <<"simpleClient">>}, {proto_ver, 3}]).
+%	emqttc:subscribe(Client, [{<<"web/deal/new">>, 1},
+%					{<<"web/deal/edit">>, 1},
+%					{<<"web/deal/delete">>, 1},
+%					{<<"web/user/register">>, 1},
+%					{<<"web/user/edit">>, 1},
+%					{<<"web/user/delete">>, 1},
+%					{<<"app/deal/save">>, 1},
+%					{<<"app/deal/delete">>, 1},
+%					{<<"app/deal/verify">>, 1},
+%					{<<"app/user/new">>, 1},
+%					{<<"app/user/filter">>, 1}]),
+ %       Broker = spawn(fun () -> broker_loop(Client) end),
+%	register(broker,Broker),
 
-	{ok, Database} = mysql:start_link([{host, "localhost"}, {user, "user"}, {password, "password"}, {database, "test"}]),
-        
-	Broker = spawn(fun () -> broker_loop(Client) end),
-	Database = spawn(fun () -> database_loop(Database) end),
-        
-	register(broker,Broker),
-	register(database, Database).
+%	{ok, Data} = mysql:start_link([{host, "129.16.155.11"}, {user, "administrator"}, {password, "DIT029XES"}, {database, "gogodeals"}]).
+%        Database = spawn(fun () -> database_loop(Data) end),
+%        register(database, Database).
 
+json(Message) -> 
+	Payload = lists:append("{'target_id': 1,'data': {", Message,"}}"),
+	jsx:encode(Payload).
+
+un_jason(Payload) ->
+	Message = jsx:decode(Payload, [return_maps]).
 	
 
 broker_loop(Client) ->
@@ -48,63 +52,73 @@ broker_loop(Client) ->
 
         %% Publish messages with a topic and Qos to the broker
         {publish, Topic, Message, Qos} ->
-                Payload = list_to_binary([Message]),
+                Payload = json(Message),
                 emqttc:publish(Client, Topic, Payload, [{qos, Qos}]),
                 broker_loop(Client);
 
         %% Subscribe to a topic on the broker
-        {subscribe, Topic} ->
-                emqttc:subscribe(Client, Topic, qos0),
-                broker_loop(Client);
+        % {subscribe, Topic} ->
+        %        emqttc:subscribe(Client, Topic, qos0),
+        %        broker_loop(Client);
 
         %% Stop the loop as a part of stopping the client
         stop ->
-                ok
-	
+                exit(broker, normal)
 	end.
 
 database_loop(Database) ->
 	receive
 		{"web/deal/new", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "INSERT INTO deals (
 				client_id, name, price, picture, description, 
 				duration, count) VALUES (?,?,?,?,?,?)", [Message]),
-			broker ! {publish, <<"database/deal/location">>, NewMessage},
+			NewMessage = mysql:query("SELECT * FROM deals WHERE location = ?", [Message]),
+			broker ! {publish, <<"database/deal/location">>, NewMessage, 1},
 			database_loop(Database);
 
-		{"web/deal/edit", Payload} -> 
+		{"web/deal/edit", Payload} ->
+			Message = un_jason(Payload), 
 			mysql:query(Database, "UPDATE deals SET name = ?, price = ?, 
 				picture = ?, description = ?, duration = ?, count = ? 
 				WHERE client_id = ?", 
 				[Message]),
-			broker ! {publish, <<"database/deal/location">>, NewMessage},
+			NewMessage = mysql:query("SELECT * FROM deals WHERE location = ?", [Message]),
+			broker ! {publish, <<"database/deal/location">>, NewMessage, 1},
 			database_loop(Database);
 
 		{"web/deal/delete", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "DELETE FROM deals WHERE client_id = ?", 
 				[Message]),
-			broker ! {publish, <<"database/deal/location">>, NewMessage},
+			NewMessage = mysql:query("SELECT * FROM deals WHERE location = ?", [Message]),
+			broker ! {publish, <<"database/deal/location">>, NewMessage, 1},
 			database_loop(Database);
 
 		{"web/user/new", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "INSERT INTO clients (name, location, 
 				email, password) VALUES (?,?,?,?)", [Message]),
 			database_loop(Database);
 
 		{"web/user/edit", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "UPDATE clients SET  ", [Message]),
 			database_loop(Database);
 
 		{"web/user/delete", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "DELETE FROM clients WHERE id = ?", [Message]),
 			database_loop(Database);
 
 		{"app/deal/save", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "UPDATE users SET deals = ?  WHERE id = ? ", 
 				[Message]),
 			database_loop(Database);
 
 		{"app/deal/delete", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "UPDATE users SET deals = ?  WHERE id = ? ", 
 				[Message]),
 			database_loop(Database);
@@ -114,22 +128,26 @@ database_loop(Database) ->
 			database_loop(Database);
 
 		{"app/user/new", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "INSERT INTO user (name, email, info, 
 				deals, filters) VALUES (?,?,?,?,?)", [Message]),
 			database_loop(Database);
 
 		{"app/user/filter", Payload} -> 
+			Message = un_jason(Payload),
 			mysql:query(Database, "UPDATE users SET filters = ?  WHERE id = ? ", 
 				[Message]),
 			database_loop(Database);
 
 		{user, Id} -> 
 			UserInfo = mysql:query(Database, "SELECT * FROM users WHERE id = ?", [Id]),
-			broker ! {publish, <<"database/info/user">>, UserInfo};
+			broker ! {publish, <<"database/info/user">>, UserInfo, 1};
 		
 		{client, Id} -> 
 			ClientInfo = mysql:query(Database, "SELECT * FROM clients WHERE id = ?", [Id]),
-			broker ! {publish, <<"database/info/client">>, ClientInfo};
+			broker ! {publish, <<"database/info/client">>, ClientInfo, 1};
 		
-		stop -> exit(database, normal)
+		stop -> 
+			%broker ! stop,
+			exit(database, normal)
 	end.
