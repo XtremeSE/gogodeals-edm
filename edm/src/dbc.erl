@@ -7,6 +7,8 @@
 %% API functions
 %%====================================================================
 
+%% Connect to a mysql database.
+%% Initialize an internal serverloop.
 start() ->
         {ok, Pid} = mysql:start_link([{host, "localhost"}, {user, "root"},
                               {password, "password"}, {database, "gogodeals"}]),
@@ -17,9 +19,10 @@ start() ->
 %% Internal functions
 %%====================================================================
 
-
+%% Listens for calls.
 loop(Database) ->
 	receive
+		%% Insert the content of a Message into the expected table in the database
 		{insert, From, Topic, Message} -> 
 			insert(Topic, Message),
 			From ! {ok, inserted};
