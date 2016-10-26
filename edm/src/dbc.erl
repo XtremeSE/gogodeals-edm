@@ -54,7 +54,7 @@ loop(Database) ->
 			
 		{update, From, Topic, Message} -> 
 			case Topic of
-		                <<"web/deal/edit">>> -> 
+		                <<"web/deal/edit">> -> 
 		                        mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, 
 		                        description = ?, duration = ?, count = ? WHERE client_id = ?, id = ?", [Message]);
 		
@@ -69,9 +69,9 @@ loop(Database) ->
 		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", [Message]);
 				
 		                <<"app/user/filter">> -> 
-		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", [Message])
+		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", [Message]);
 
-		                <<"app/deal/verify">> -> todo;
+		                <<"app/deal/verify">> -> todo
 	                end,
 			From ! {ok, updated};
 		
@@ -87,7 +87,7 @@ loop(Database) ->
 	end.
 
 handle_call(Action, From, Topic, Payload) -> 
-	Message = jtm:get_id(Payload) ++ get_data_values(Payload),
+	Message = jtm:get_id(Payload) ++ jtm:get_data_values(Payload),
 	database ! {Action, From, Topic, Message}.
 
 
