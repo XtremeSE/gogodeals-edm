@@ -44,7 +44,7 @@ loop(Database) ->
 		                        Values = jtm:get_values(Message),
 		                        io:format("Statement: ~s~n", [Stmt]),
 		                        io:format("Values: ~p~n", [Values]),
-		                        W = mysql:query(Database, Stmt, [Values]);
+		                        W = mysql:query(Database, Stmt, Values);
 		                <<"web/user/new">> -> 
 		                        W = mysql:query(Database, "INSERT INTO clients (" ++ jtm:get_key(Message) ++ ") VALUES (?,?,?,?,?)", [jtm:get_values(Message)]);
 		                <<"app/user/new">> -> 
