@@ -17,7 +17,10 @@ start() ->
 
 handle_call(Action, From, Topic, Payload) -> 
 	Message = jtm:get_data(Payload),
-	database ! {Action, From, Topic, Message}.
+	database ! {Action, self(), Topic, Message},
+	receive
+	        M -> From ! M
+	end.
 	
 test() ->
         start(),
