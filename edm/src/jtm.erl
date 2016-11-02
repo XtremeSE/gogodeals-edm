@@ -1,3 +1,8 @@
+%%%-------------------------------------------------------------------
+%% @doc module for json, map and list handling using jsx lib for json
+%% @end
+%%%-------------------------------------------------------------------
+
 -module(jtm).
 
 %% API exports

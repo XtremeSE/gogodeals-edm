@@ -1,3 +1,8 @@
+%%%-------------------------------------------------------------------
+%% @doc module for connecting to a MySQL db through the mysql/otp api
+%% @end
+%%%-------------------------------------------------------------------
+
 -module(dbc).
 
 %% API exports
@@ -7,20 +12,12 @@
 %% API functions
 %%====================================================================
 
-%% Connect to a mysql database.
-%% Initialize an internal serverloop.
-start() ->
-        {ok, Pid} = mysql:start_link([{host, "localhost"}, {user, "root"},
-                              {password, "password"}, {database, "gogodeals"}]),
-	Db = spawn(fun () -> loop(Pid) end),
-	register(database, Db).
+start() -> init().
+
 
 handle_call(Action, From, Topic, Payload) -> 
 	Message = jtm:get_data(Payload),
-	database ! {Action, self(), Topic, Message},
-	receive
-	        M -> From ! M
-	end.
+	database ! {Action, self(), Topic, Message}.
 	
 test() ->
         start(),
@@ -36,6 +33,16 @@ test() ->
 %% Internal functions
 %%====================================================================
 
+%% Connect to a mysql database.
+%% Initialize an internal serverloop.
+init() ->
+        {ok, Pid} = mysql:start_link([{host, "localhost"}, {user, "root"},
+                              {password, "password"}, {database, "gogodeals"}]),
+	Db = spawn(fun () -> loop(Pid) end),
+	register(database, Db),
+	{ok, Pid}.
+
+
 %% Listens for calls.
 loop(Database) ->
 	receive
@@ -45,23 +52,26 @@ loop(Database) ->
 		                <<"web/deal/new">> -> 
 		                        Stmt = "INSERT INTO deals (" ++ jtm:get_key(Message) ++ ") VALUES (?,?,?,?,?,?,?)",
 		                        Values = jtm:get_values(Message),
-		                        io:format("Statement: ~s~n", [Stmt]),
-		                        io:format("Values: ~p~n", [Values]),
-		                        W = mysql:query(Database, Stmt, Values);
+		                        mysql:query(Database, Stmt, Values);
+		                        
 		                <<"web/user/new">> -> 
-		                        W = mysql:query(Database, "INSERT INTO clients (" ++ jtm:get_key(Message) ++ ") VALUES (?,?,?,?,?)", [jtm:get_values(Message)]);
+		                        mysql:query(Database, "INSERT INTO clients (" ++ jtm:get_key(Message) ++ ") VALUES (?,?,?,?)", jtm:get_values(Message));
+		                        
 		                <<"app/user/new">> -> 
-		                        W = mysql:query(Database, "INSERT INTO user (" ++ jtm:get_key(Message) ++ ") VALUES (?,?,?)", [jtm:get_values(Message)])
+		                        mysql:query(Database, "INSERT INTO users (" ++ jtm:get_key(Message) ++ ") VALUES (?,?,?,?,?)", jtm:get_values(Message))
+		                        
 	                end,
-	                From ! W;
+	                loop(Database);
 	        
 	        %% Select info from the database corresponding to the Topic and publish it.      
-		{select, _From, Topic, Message} -> 
+		{select, From, Topic, Message} -> 
 			case Topic of
 		                <<"app/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, "Select * From users Where id = ?", [jtm:get_values(Message)]),
-                                        edm:publish(Database, <<"database/user/info">>, to_map(ColumnNames, Rows), 1);
+		                                mysql:query(Database, <<"Select * From users Where id =?">>, jtm:get_values(Message)),
+                                        io:format("Selected: ~s~n", [ColumnNames]),
+                                        io:format("Selected: ~p~n", Rows),
+                                        edm:publish(From, <<"database/user/info">>, {1, false, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"web/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
@@ -77,7 +87,8 @@ loop(Database) ->
 		                        {ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, "Select * From deals Where location = ?", [jtm:get_values(Message)]),
                 			edm:publish(Database, <<"database/deal/info">>, to_map(ColumnNames, Rows))
-	                end;
+	                end,
+	                loop(Database);
 			
 		%% Update the content of a Message into the expected table in the database
 		{update, From, Topic, Message} -> 
@@ -101,7 +112,8 @@ loop(Database) ->
 
 		                <<"app/deal/verify">> -> todo
 	                end,
-			From ! {ok, updated};
+			From ! {ok, updated},
+			loop(Database);
 		
 		%% Delete data in the database according to the content of the Message
 		{delete, From, Topic, Message} -> 
@@ -112,9 +124,11 @@ loop(Database) ->
 		                <<"web/user/delete">> -> 
 		                        mysql:query(Database, "DELETE FROM deals WHERE client_id = ?", [jtm:get_values(Message)])
 	                end,
-			From ! {ok, deleted}
+			From ! {ok, deleted},
+			loop(Database)
 	end.
 
 
 %% Convert a list of ColumnNames and a list of Rows into a map
-to_map(ColumnNames, Rows) -> maps:from_list([ {C, R} || C <- ColumnNames, R <- Rows]).
+to_map(ColumnNames, [Rows]) ->         
+        maps:from_list(lists:zip(ColumnNames, Rows)).

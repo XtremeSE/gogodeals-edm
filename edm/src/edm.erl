@@ -1,6 +1,12 @@
+%%%-------------------------------------------------------------------
+%% @doc module for initializing a simple emqttc connection to a MQTT 
+%%      broker and listening for calls.
+%% @end
+%%%-------------------------------------------------------------------
+
 -module(edm).
 
-%% API exports
+%% API
 -export([start/0, publish/4]).
 
 %%====================================================================
@@ -8,11 +14,10 @@
 %%====================================================================
 
 start() -> 
-	spawn(fun () -> init(),
-	io:format("Client is up: ~p~n", [whereis(client)]) end).
+	init().
 
 publish(From, Topic, Message, Qos) ->
-        client ! {send, From, {Topic, Message, Qos}}.
+        From ! {send, {Topic, Message, Qos}}.
 
 %%====================================================================
 %% Internal functions
@@ -47,13 +52,11 @@ broker_loop(Client) ->
                 {publish, Topic, Payload} ->
                         io:format("Message from ~s: ~p~n", [Topic, jtm:get_data_values(Payload)]),
 		        dbc:handle_call(jtm:get_action(Topic), Client, Topic, Payload),
-		        receive
-		                ok -> ok
-		        end,
+                        io:format("Everything is awesome! ~p~n", ["Cool"]),
                         broker_loop(Client);
 
                 %% Publish messages with a topic and Qos to the broker
-                {send, From, {Topic, Message, Qos}} ->
+                {send, {Topic, Message, Qos}} ->
                         io:format("Publish: ~p~n", [Message]),
 		        Payload = jtm:to_payload(Message),
                         emqttc:publish(Client, Topic, Payload, [{qos, Qos}]),

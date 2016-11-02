@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc database supervisor.
+%% @doc mqtt communication supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(db_sup).
+-module(com_sup).
 
 -behaviour(supervisor).
 
@@ -21,7 +21,7 @@
 
 start_link() ->
     %%supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-      supervisor:start_link(db_sup, []).  
+      supervisor:start_link(com_sup, []).  
         
 %%====================================================================
 %% Supervisor callbacks
@@ -29,7 +29,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 0, 1}, [{dbc, {dbc, start, []}, permanent, brutal_kill, worker, [dbc]}]}}.
+    {ok, { {one_for_one, 0, 1}, [{edm, {edm, start, []}, permanent, brutal_kill, worker, [edm]}]}}.
 
 %%====================================================================
 %% Internal functions
