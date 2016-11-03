@@ -13,9 +13,10 @@
 %% API functions
 %%====================================================================
 
-start() -> 
-	init().
+%% Start a connection to a broker
+start() -> init().
 
+%% Publish messages to the broker
 publish(From, Topic, Message, Qos) ->
         From ! {send, {Topic, Message, Qos}}.
 
@@ -41,7 +42,6 @@ init() ->
 					{<<"app/user/new">>, 1},
 					{<<"app/user/filter">>, 1}]),
         broker_loop(Client),
-	%io:format("Broker connection is up: ~p~n", [Broker]),
 	register(client, Client).
 
 
@@ -50,14 +50,12 @@ broker_loop(Client) ->
  	
 	        %% Receive messages from subscribed topics
                 {publish, Topic, Payload} ->
-                        io:format("Message from ~s: ~p~n", [Topic, jtm:get_data_values(Payload)]),
 		        dbc:handle_call(jtm:get_action(Topic), Client, Topic, Payload),
-                        io:format("Everything is awesome! ~p~n", ["Cool"]),
                         broker_loop(Client);
 
                 %% Publish messages with a topic and Qos to the broker
                 {send, {Topic, Message, Qos}} ->
-                        io:format("Publish: ~p~n", [Message]),
+                        io:format("Publish: ~p~n", Message),
 		        Payload = jtm:to_payload(Message),
                         emqttc:publish(Client, Topic, Payload, [{qos, Qos}]),
                         broker_loop(Client);                        

@@ -12,22 +12,18 @@
 %% API functions
 %%====================================================================
 
+%% Start a connection to a MySQL database
 start() -> init().
 
-
+%% Send a message to the database consisting of:
+%%      Action       :: What to do
+%%      From         :: Who is the caller
+%%      Topic        :: What is the topic
+%%      Payload      :: What is the message
 handle_call(Action, From, Topic, Payload) -> 
-	database ! {Action, self(), Topic, Payload}.
-	
-test() ->
-        start(),
-        Topic = <<"web/deal/new">>,
-        Message = <<"{\"id\": \"1\", \"payload_encryption\": false, \"data\": {\"client_id\": 2, \"name\": \"Coffee\", \"price\": 15, \"picture\": null, \"description\": \"This is a mean thing\", \"duration\": 123456, \"count\": 15},}">>,
-        handle_call(insert, self(), Topic, Message),
-        receive
-                M -> M
-        end.
-	
-
+	database ! {Action, From, Topic, Payload}.
+		
+		
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -35,8 +31,10 @@ test() ->
 %% Connect to a mysql database.
 %% Initialize an internal serverloop.
 init() ->
-        {ok, Pid} = mysql:start_link([{host, "localhost"}, {user, "root"},
-                              {password, "password"}, {database, "gogodeals"}]),
+        {ok, Pid} = mysql:start_link([{host, "localhost"}, 
+                                        {user, "root"},
+                                        {password, "password"}, 
+                                        {database, "gogodeals"}]),
 	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),
 	{ok, Pid}.
@@ -45,49 +43,69 @@ init() ->
 %% Listens for calls.
 loop(Database) ->
 	receive
-		%% Insert the content of a Message into the expected table in the database
+		%% Insert the content of a Message into the expected 
+		%% table in the database
 		{insert, From, Topic, Message} -> 
 			Data = jtm:get_data(Message),
 			case Topic of
 		                <<"web/deal/new">> -> 
-		                        Stmt = "INSERT INTO deals (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?,?,?,?)",
+		                        Stmt = "INSERT INTO deals (" 
+		                                ++ jtm:get_key(Data) 
+		                                ++ ") VALUES (?,?,?,?,?,?,?)",
 		                        Values = jtm:get_values(Data),
 		                        mysql:query(Database, Stmt, Values);
 		                        
 		                <<"web/user/new">> -> 
-		                        mysql:query(Database, "INSERT INTO clients (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?)", jtm:get_values(Data));
+		                        mysql:query(Database, 
+		                                "INSERT INTO clients (" 
+		                                ++ jtm:get_key(Data) 
+		                                ++ ") VALUES (?,?,?,?)", 
+		                                jtm:get_values(Data));
 		                        
 		                <<"app/user/new">> -> 
-		                        mysql:query(Database, "INSERT INTO users (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?,?)", jtm:get_values(Data))
+		                        mysql:query(Database, 
+		                        "INSERT INTO users (" 
+		                        ++ jtm:get_key(Data) 
+		                        ++ ") VALUES (?,?,?,?,?)", 
+		                        jtm:get_values(Data))
 		                        
 	                end,
 	                loop(Database);
 	        
-	        %% Select info from the database corresponding to the Topic and publish it.      
+	        %% Select info from the database corresponding to the 
+	        %% Topic and publish it.      
 		{select, From, Topic, Message} -> 
 			Data = jtm:get_data(Message),
 			case Topic of
 		                <<"app/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select * From users Where id =?">>, jtm:get_values(Data)),
-                                        io:format("Selected: ~s~n", [ColumnNames]),
-                                        io:format("Selected: ~p~n", Rows),
-                                        edm:publish(From, <<"database/user/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
+		                                mysql:query(Database, 
+		                                        <<"Select * From users Where id =?">>, 
+		                                        jtm:get_values(Data)),
+                                                edm:publish(From, <<"database/user/info">>, 
+                                                        {jtm:get_id(Message), false, 
+                                                        to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"web/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, "Select * From clients Where id = ?", [jtm:get_values(Data)]),
-		                        edm:publish(Database, <<"database/client/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
+		                                mysql:query(Database, 
+		                                        "Select * From clients Where id = ?", 
+		                                        jtm:get_values(Data)),
+		                        edm:publish(Database, <<"database/client/info">>, 
+		                                        {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"web/deal/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, "Select * From deals Where client_id = ?", [jtm:get_values(Data)]),
-		                        edm:publish(Database, <<"database/deal/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
+		                                mysql:query(Database, 
+		                                        "Select * From deals Where client_id = ?", jtm:get_values(Data)),
+		                        edm:publish(Database, <<"database/deal/info">>, 
+		                                        {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
 		                        
 		                <<"app/deal/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, "Select * From deals Where location = ?", [jtm:get_values(Data)]),
-                			edm:publish(Database, <<"database/deal/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1)
+		                                mysql:query(Database, 
+		                                        "Select * From deals Where location = ?", jtm:get_values(Data)),
+                			        edm:publish(Database, <<"database/deal/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
 			
@@ -97,20 +115,20 @@ loop(Database) ->
 			case Topic of
 		                <<"web/deal/edit">> -> 
 		                        mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, 
-		                        description = ?, duration = ?, count = ? WHERE id = ?", jtm:stupid_sort(["name","price","picture","description","duration","count"],Data) ++ jtm:get_id(Message));
+		                        description = ?, duration = ?, count = ? WHERE id = ?", jtm:stupid_sort([<<"name">>,<<"price">>,<<"picture">>,<<"description">>,<<"duration">>,<<"count">>],Data) ++ jtm:get_id(Message));
 		
 		                <<"web/user/edit">> -> 
 		                        mysql:query(Database, "UPDATE clients SET name = ?, location = ?, email = ?, 
-		                        password = ? WHERE id = ?", jtm:stupid_sort(["name","location","email","password"], Message));
+		                        password = ? WHERE id = ?", jtm:stupid_sort(["name","location","email","password"], Data));
 		
 		                <<"app/deal/save">> -> 
-		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Message));
+		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data));
 		
 		                <<"app/deal/delete">> -> 
-		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Message));
+		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data));
 				
 		                <<"app/user/filter">> -> 
-		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:stupid_sort(["filters","id"],Message));
+		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:stupid_sort(["filters","id"],Data));
 
 		                <<"app/deal/verify">> -> todo
 	                end,

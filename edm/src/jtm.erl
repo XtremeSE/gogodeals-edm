@@ -21,12 +21,14 @@ get_id(Message) ->
 	{ok, Id} = maps:find(<<"id">>, M),
 	[Id].
 
+
 %% Return if data from a RFC Deal Message Transfer message is encrypted
 %% or not.
 is_encrypted(Message) ->
 	M = jsx:decode(Message, [return_maps]),
 	{ok, Encrypted} = maps:find(<<"payload_encryption">>, M),
 	Encrypted.
+
 
 %% Return the values of the data collection within the message as a list
 get_data_values(Message) -> 
@@ -35,12 +37,16 @@ get_data_values(Message) ->
 	{ok, Data} = maps:find(<<"data">>, M),
 	T = [ Y || {_,Y} <- [maps:find(X, Data) || X <- maps:keys(Data)]].	
 
+
+%% Takes a json message and converts it into a list of tuples 
 get_data(Message) -> 
         M = jsx:decode(Message, [return_maps]),
 	io:format("Decoded json map: ~p~n", [M]),
 	{ok, Data} = maps:find(<<"data">>, M),
 	maps:to_list(Data).
 
+
+%% Return a list of values from a key value tuple
 get_values([]) -> [];
 get_values([{_,V}|L]) -> 
         case is_binary(V) of
@@ -48,16 +54,19 @@ get_values([{_,V}|L]) ->
                 false -> [V] ++ get_values(L)
         end.
 
+
+%% Return a list of keys from a key value tuple
 get_key([{K,_}|[]]) -> binary:bin_to_list(K);
 get_key([{K,_}|Xs]) -> binary:bin_to_list(K) ++ ", " ++ get_key(Xs).
 
 
-%%stupid_sort(Key, List) -> [ V || {K,V} <- List, Ks <- Key, K == Ks].
-
+%% Takes a list of Key(s) and a list of {Key, Value} and sort the list 
+%% of tuples with the keys of the Key list
 stupid_sort([], []) -> [];
 stupid_sort([K|[]], [{K,V}|[]]) -> [V];
-stupid_sort([K|Ks], [{K,V}|Ls]) -> [V] ++ stupid_sort(Ks, Ls);
-stupid_sort([K|Ks], List) -> stupid_sort(Ks ++ [K], List).
+stupid_sort([K|Ks], [{K,V}|[]]) -> [V];
+stupid_sort([K|Ks], [{K,V}|Ls]) -> [V|stupid_sort(Ks, Ls)];
+stupid_sort(Keys, [L|Ls]) -> stupid_sort(Keys, Ls ++ [L]).
 
 
 %% Return an action for the database corresponding with a message Topic
@@ -88,11 +97,6 @@ to_payload({Id, Encryption, MapOfArguments}) ->
         Payload = #{ target_id => Id, payload_encryption => Encryption, data => MapOfArguments},
 	jsx:encode(Payload).
         
-
-test() ->
-	Message = <<"{\"id\": \"12345678-1111-M123-N123-123456123456\", \"payload_encryption\": false, \"data\": {\"name\": \"Coffee\", \"client_id\": 10, \"duration\": 1234, \"test\": null},}">>,
-	get_data(Message).
-
 
 %%====================================================================
 %% Internal functions
