@@ -52,7 +52,13 @@ get_key([{K,_}|[]]) -> binary:bin_to_list(K);
 get_key([{K,_}|Xs]) -> binary:bin_to_list(K) ++ ", " ++ get_key(Xs).
 
 
-stupid_sort(Key, List) -> [ V || {K,V} <- List, Ks <- Key, K == Ks].
+%%stupid_sort(Key, List) -> [ V || {K,V} <- List, Ks <- Key, K == Ks].
+
+stupid_sort([], []) -> [];
+stupid_sort([K|[]], [{K,V}|[]]) -> [V];
+stupid_sort([K|Ks], [{K,V}|Ls]) -> [V] ++ stupid_sort(Ks, Ls);
+stupid_sort([K|Ks], List) -> stupid_sort(Ks ++ [K], List).
+
 
 %% Return an action for the database corresponding with a message Topic
 get_action(Topic) ->
