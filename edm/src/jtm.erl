@@ -8,7 +8,6 @@
 %% API exports
 -export([get_id/1, is_encrypted/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1]).
 
--export([test/0]).
 
 
 %%====================================================================
@@ -35,7 +34,7 @@ get_data_values(Message) ->
 	M = jsx:decode(Message, [return_maps]),
 	io:format("Decoded json map: ~p~n", [M]),
 	{ok, Data} = maps:find(<<"data">>, M),
-	T = [ Y || {_,Y} <- [maps:find(X, Data) || X <- maps:keys(Data)]].	
+	[ Y || {_,Y} <- [maps:find(X, Data) || X <- maps:keys(Data)]].	
 
 
 %% Takes a json message and converts it into a list of tuples 
@@ -72,24 +71,24 @@ stupid_sort(Keys, [L|Ls]) -> stupid_sort(Keys, Ls ++ [L]).
 %% Return an action for the database corresponding with a message Topic
 get_action(Topic) ->
         case Topic of
-                <<"web/deal/info">> -> select;
-                <<"web/deal/new">> -> insert;
-		<<"web/deal/edit">> -> update;
-		<<"web/deal/delete">> -> delete;
+                <<"deal/gogodeals/deal/info">> -> select;
+                <<"deal/gogodeals/deal/new">> -> insert;
+		<<"deal/gogodeals/deal/edit">> -> update;
+		<<"deal/gogodeals/deal/delete">> -> delete;
 		
-		<<"web/user/info">> -> select;
-		<<"web/user/new">> -> insert;
-		<<"web/user/edit">> -> update;
-		<<"web/user/delete">> -> delete;
+		<<"deal/gogodeals/client/info">> -> select;
+		<<"deal/gogodeals/client/new">> -> insert;
+		<<"deal/gogodeals/client/edit">> -> update;
+		<<"deal/gogodeals/client/delete">> -> delete;
 		
-		<<"app/deal/info">> -> select;
-		<<"app/deal/save">> -> update;
-		<<"app/deal/delete">> -> update;
-		<<"app/deal/verify">> -> update;
+		<<"deal/gogodeals/deal/fetch">> -> select;
+		<<"deal/gogodeals/deal/save">> -> update;
+		<<"deal/gogodeals/deal/remove">> -> update;
+		<<"deal/gogodeals/deal/verify">> -> update;
 		
-		<<"app/user/info">> -> select;
-		<<"app/user/new">> -> insert;
-		<<"app/user/filter">> -> update
+		<<"deal/gogodeals/user/info">> -> select;
+		<<"deal/gogodeals/user/new">> -> insert;
+		<<"deal/gogodeals/user/filter">> -> update
         end.
 
 %% Converts a tuple of {Id, Encryption, MapOfArguments} into a payload message adhearing to the RFC Deal Message Transfer

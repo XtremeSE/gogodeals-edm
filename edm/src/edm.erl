@@ -26,21 +26,24 @@ publish(From, Topic, Message, Qos) ->
 
 init() ->
 	{ok, Client} = emqttc:start_link([{host, "176.10.136.208"},{client_id, <<"simpleClient">>}, {proto_ver, 3}]),
-	emqttc:subscribe(Client, [{<<"web/deal/info">>, 1}, 
-				        {<<"web/deal/new">>, 1},
-					{<<"web/deal/edit">>, 1},
-					{<<"web/deal/delete">>, 1},
-					{<<"web/user/info">>, 1},
-					{<<"web/user/new">>, 1},
-					{<<"web/user/edit">>, 1},
-					{<<"web/user/delete">>, 1},
-					{<<"app/deal/info">>, 1},
-					{<<"app/deal/save">>, 1},
-					{<<"app/deal/delete">>, 1},
-					{<<"app/deal/verify">>, 1},
-					{<<"app/user/info">>, 1},
-					{<<"app/user/new">>, 1},
-					{<<"app/user/filter">>, 1}]),
+	emqttc:subscribe(Client, [	%% Client/Customer
+					{<<"deal/gogodeals/deal/info">>, 1},
+				        {<<"deal/gogodeals/deal/new">>, 1},
+					{<<"deal/gogodeals/deal/edit">>, 1},
+					{<<"deal/gogodeals/deal/delete">>, 1},
+					{<<"deal/gogodeals/client/info">>, 1},
+					{<<"deal/gogodeals/client/new">>, 1},
+					{<<"deal/gogodeals/client/edit">>, 1},
+					{<<"deal/gogodeals/client/delete">>, 1},
+					
+					%% User
+					{<<"deal/gogodeals/deal/fetch">>, 1},
+					{<<"deal/gogodeals/deal/save">>, 1},
+					{<<"deal/gogodeals/deal/remove">>, 1},
+					{<<"deal/gogodeals/deal/verify">>, 1},
+					{<<"deal/gogodeals/user/info">>, 1},
+					{<<"deal/gogodeals/user/new">>, 1},
+					{<<"deal/gogodeals/user/filter">>, 1}]),
         broker_loop(Client),
 	register(client, Client).
 
