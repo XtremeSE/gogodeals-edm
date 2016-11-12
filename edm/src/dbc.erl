@@ -126,10 +126,9 @@ loop(Database) ->
 		
 		                <<"deal/gogodeals/deal/save">> -> 
 		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data)),
-					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", jtm:get_id(Message));
-					{ok, ColumnNames, Rows} = mysql:query(Database, 
-		                        	"Select count From deals Where id = ?", jtm:get_id(Message)),
-                			edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1)
+					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", jtm:get_id(Message)),
+					{ok, ColumnNames, Rows} = mysql:query(Database, "Select count From deals Where id = ?", jtm:get_id(Message)),
+                			edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
 		
 		                <<"deal/gogodeals/deal/remove">> -> %% From Application
 		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data)),
