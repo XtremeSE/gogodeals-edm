@@ -18,7 +18,9 @@ start() -> init().
 
 %% Publish messages to the broker
 publish(From, Topic, Message, Qos) ->
-        From ! {send, {Topic, Message, Qos}}.
+        Payload = jtm:to_payload(Message),
+        emqttc:publish(From, Topic, Payload, [{qos, Qos}]),
+	io:format("Step: ~p~n", ["4"]).
 
 %%====================================================================
 %% Internal functions
@@ -55,13 +57,6 @@ broker_loop(Client) ->
                 {publish, Topic, Payload} ->
 		        dbc:handle_call(jtm:get_action(Topic), Client, Topic, Payload),
                         broker_loop(Client);
-
-                %% Publish messages with a topic and Qos to the broker
-                {send, {Topic, Message, Qos}} ->
-                        io:format("Publish: ~p~n", Message),
-		        Payload = jtm:to_payload(Message),
-                        emqttc:publish(Client, Topic, Payload, [{qos, Qos}]),
-                        broker_loop(Client);                        
 
                 %% Stop the loop as a part of stopping the client
                 stop ->

@@ -92,8 +92,8 @@ get_action(Topic) ->
         end.
 
 %% Converts a tuple of {Id, Encryption, MapOfArguments} into a payload message adhearing to the RFC Deal Message Transfer
-to_payload({Id, Encryption, MapOfArguments}) -> 
-        Payload = #{ target_id => Id, payload_encryption => Encryption, data => MapOfArguments},
+to_payload({Id, MapOfArguments}) -> 
+        Payload = #{ id => Id, data => MapOfArguments},
 	jsx:encode(Payload).
         
 

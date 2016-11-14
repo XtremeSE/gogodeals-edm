@@ -97,14 +97,12 @@ loop(Database) ->
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
 		                        {ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, 
-		                                        "Select * From deals Where client_id = ?", jtm:get_values(Data)),
-		                        edm:publish(Database, <<"deal/gogodeals/database/info">>, 
-		                                        {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
+		                                        "Select * From deals Where client_id = ?", jtm:get_id(Message)),
+		                        edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
 		                        
 		                <<"deal/gogodeals/deal/fetch">> -> %% From Application
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, 
-		                                        "Select * From deals Where location = ?, filters in (?), deals not in (?)", jtm:get_values(Data)),
+		                                mysql:query(Database, "Select * From deals Where location = ? and filters in (?) and id not in (?)", jtm:get_values(Data)),
                 			        edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
@@ -125,10 +123,14 @@ loop(Database) ->
 						jtm:stupid_sort(["name","location","email","password"], Data));
 		
 		                <<"deal/gogodeals/deal/save">> -> 
-		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data)),
+		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort([<<"deals">>,<<"id">>], Data)),
+					io:format("Step: ~p~n", ["0"]),
 					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", jtm:get_id(Message)),
+					io:format("Step: ~p~n", ["1"]),
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select count From deals Where id = ?", jtm:get_id(Message)),
-                			edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
+					io:format("Step: ~p~n", Rows),
+                			[Id] = jtm:get_id(Message), 
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		
 		                <<"deal/gogodeals/deal/remove">> -> %% From Application
 		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data)),
@@ -139,7 +141,7 @@ loop(Database) ->
 
 		                <<"deal/gogodeals/deal/verify">> -> todo
 	                end,
-			From ! {ok, updated},
+			%%From ! {ok, updated},
 			loop(Database);
 		
 		%% Delete data in the database according to the content of the Message
@@ -157,5 +159,7 @@ loop(Database) ->
 
 
 %% Convert a list of ColumnNames and a list of Rows into a map
-to_map(ColumnNames, [Rows]) ->         
-        maps:from_list(lists:zip(ColumnNames, Rows)).
+
+to_map(ColumnNames, [Rows]) -> 
+	io:format("Step: ~p~n", ["3"]),	
+	maps:from_list(lists:zip(ColumnNames, Rows)).
