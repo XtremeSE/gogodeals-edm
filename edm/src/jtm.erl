@@ -6,7 +6,7 @@
 -module(jtm).
 
 %% API exports
--export([get_id/1, is_encrypted/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1]).
+-export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1]).
 
 
 
@@ -19,14 +19,6 @@ get_id(Message) ->
 	M = jsx:decode(Message, [return_maps]),
 	{ok, Id} = maps:find(<<"id">>, M),
 	[Id].
-
-
-%% Return if data from a RFC Deal Message Transfer message is encrypted
-%% or not.
-is_encrypted(Message) ->
-	M = jsx:decode(Message, [return_maps]),
-	{ok, Encrypted} = maps:find(<<"payload_encryption">>, M),
-	Encrypted.
 
 
 %% Return the values of the data collection within the message as a list
@@ -100,4 +92,4 @@ to_payload({Id, MapOfArguments}) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-
+ 

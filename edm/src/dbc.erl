@@ -33,7 +33,7 @@ handle_call(Action, From, Topic, Payload) ->
 init() ->
         {ok, Pid} = mysql:start_link([{host, "129.16.155.11"}, 
                                         {user, "root"},
-                                        {password, "password"}, 
+                                        {password, "Mammamu77"}, 
                                         {database, "gogodeals"}]),
 	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),
@@ -62,7 +62,7 @@ loop(Database) ->
 		                                ++ ") VALUES (?,?,?,?)", %% name, email, password, location
 		                                jtm:get_values(Data));
 		                        
-		                <<"deal/gogodeal/user/new">> -> 
+		                <<"deal/gogodeals/user/new">> -> 
 		                        mysql:query(Database, 
 		                        "INSERT INTO users (" 
 		                        ++ jtm:get_key(Data) 
@@ -76,34 +76,26 @@ loop(Database) ->
 	        %% Topic and publish it.      
 		{select, From, Topic, Message} -> 
 			Data = jtm:get_data(Message),
+		        [Id] = jtm:get_id(Message),
 			case Topic of
 		                <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, 
-		                                        <<"Select * From users Where id =?">>, 
-		                                        jtm:get_id(Message)),
-                                                edm:publish(From, <<"deal/gogodeals/database/info">>, 
-                                                        {jtm:get_id(Message), false, 
-                                                        to_map(ColumnNames, Rows)}, 1);
+		                                mysql:query(Database, <<"Select * From users Where id =?">>, [Id]),
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/client/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, 
-		                                        "Select * From clients Where id = ?", 
-		                                        jtm:get_id(Message)),
-		                        edm:publish(Database, <<"deal/gogodeals/database/info">>, 
-		                                        {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
+			                	mysql:query(Database, "Select * From clients Where id = ?", [Id]),
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
-		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, 
-		                                        "Select * From deals Where client_id = ?", jtm:get_id(Message)),
-		                        edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1);
-		                        
+					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [binary_to_list(Id)]),
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1)
+
 		                <<"deal/gogodeals/deal/fetch">> -> %% From Application
 		                        {ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, "Select * From deals Where location = ? and filters in (?) and id not in (?)", jtm:get_values(Data)),
-                			        edm:publish(Database, <<"deal/gogodeals/database/info">>, {jtm:get_id(Message), false, to_map(ColumnNames, Rows)}, 1)
+                			edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
 			
@@ -159,7 +151,12 @@ loop(Database) ->
 
 
 %% Convert a list of ColumnNames and a list of Rows into a map
+to_deal_map(Counter, ColumnNames, [R|[]]) -> [{Counter, to_map(ColumnNames, R)}];
+to_deal_map(Counter, ColumnNames, [R|Rs]) -> maps:from_list([{Counter, to_map(ColumnNames, R)}] ++ to_deal_map(Counter+1, ColumnNames, Rs)).
 
+%to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
 	maps:from_list(lists:zip(ColumnNames, Rows)).
+
+
