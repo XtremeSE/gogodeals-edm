@@ -31,7 +31,7 @@ handle_call(Action, From, Topic, Payload) ->
 %% Connect to a mysql database.
 %% Initialize an internal serverloop.
 init() ->
-        {ok, Pid} = mysql:start_link([{host, "129.16.155.11"}, 
+        {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
                                         {password, "Mammamu77"}, 
                                         {database, "gogodeals"}]),
@@ -51,7 +51,7 @@ loop(Database) ->
 		                <<"deal/gogodeals/deal/new">> -> 
 		                        Stmt = "INSERT INTO deals (" 
 		                                ++ jtm:get_key(Data) 
-		                                ++ ") VALUES (?,?,?,?,?,?,?,?)", %% name, description, picture, location, duration, count, filters, client_id
+		                                ++ ") VALUES (?,?,?,?,?,?,?,?,?)", %% name, description, picture, longitude, latitude, duration, count, filters, client_id
 		                        Values = jtm:get_values(Data),
 		                        mysql:query(Database, Stmt, Values);
 		                        
@@ -59,7 +59,7 @@ loop(Database) ->
 		                        mysql:query(Database, 
 		                                "INSERT INTO clients (" 
 		                                ++ jtm:get_key(Data) 
-		                                ++ ") VALUES (?,?,?,?)", %% name, email, password, location
+		                                ++ ") VALUES (?,?,?,?,?)", %% name, email, password, longitude, latitude
 		                                jtm:get_values(Data));
 		                        
 		                <<"deal/gogodeals/user/new">> -> 
@@ -80,21 +80,22 @@ loop(Database) ->
 			case Topic of
 		                <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select * From users Where id =?">>, [Id]),
+		                                mysql:query(Database, <<"Select * From users Where email =? and password = ?">>, Data),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/client/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-			                	mysql:query(Database, "Select * From clients Where id = ?", [Id]),
+			                	mysql:query(Database, "Select * From clients Where email =? and password = ?", Data),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
-					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [binary_to_list(Id)]),
-					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1)
+					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1);
 
 		                <<"deal/gogodeals/deal/fetch">> -> %% From Application
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, "Select * From deals Where location = ? and filters in (?) and id not in (?)", jtm:get_values(Data)),
+		                                mysql:query(Database, "Select * From deals Where longitude <= ? + 0.2 and longitude >= ? - 0.2 and 
+									latitude <= ? + 0.2 and latitude >= ? - 0,2 and filters in (?) and id not in (?)", jtm:get_values(Data)),
                 			edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
@@ -110,9 +111,9 @@ loop(Database) ->
 							<<"duration">>, <<"count">>],Data) ++ jtm:get_id(Message));
 		
 		                <<"deal/gogodeals/client/edit">> -> 
-		                        mysql:query(Database, "UPDATE clients SET name = ?, location = ?, email = ?, 
+		                        mysql:query(Database, "UPDATE clients SET name = ?, longitude = ?, latitude = ?, email = ?, 
 			                        password = ? WHERE id = ?", 
-						jtm:stupid_sort(["name","location","email","password"], Data));
+						jtm:stupid_sort(["name","longitude", "latitude","email","password"], Data));
 		
 		                <<"deal/gogodeals/deal/save">> -> 
 		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort([<<"deals">>,<<"id">>], Data)),
@@ -145,14 +146,14 @@ loop(Database) ->
 		                <<"deal/gogodeals/deal/delete">> -> 
 		                        mysql:query(Database, "DELETE FROM deals WHERE id = ?", jtm:get_id(Message))
 	                end,
-			From ! {ok, deleted},
 			loop(Database)
 	end.
 
 
 %% Convert a list of ColumnNames and a list of Rows into a map
-to_deal_map(Counter, ColumnNames, [R|[]]) -> [{Counter, to_map(ColumnNames, R)}];
-to_deal_map(Counter, ColumnNames, [R|Rs]) -> maps:from_list([{Counter, to_map(ColumnNames, R)}] ++ to_deal_map(Counter+1, ColumnNames, Rs)).
+to_deal_map(_Counter, _ColumnNames, []) -> #{};
+to_deal_map(Counter, ColumnNames, [R|[]]) -> [{Counter, to_map(ColumnNames, [R])}];
+to_deal_map(Counter, ColumnNames, [R|Rs]) -> maps:from_list([{Counter, to_map(ColumnNames, [R])}] ++ to_deal_map(Counter+1, ColumnNames, Rs)).
 
 %to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
