@@ -99,7 +99,7 @@ loop(Database) ->
 						Other = [ Y || {_,Y} <- [maps:find(X, Data) || X <- maps:keys(Data), X /= <<"longitude">>, X /= <<"latitude">>]],
 						mysql:query(Database, "Select * From deals Where longitude in (?) and 
 									latitude in (?) and filters in (?) and id not in (?)", [Long, Lat, Other]),
-                			edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1)
+                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
 			
