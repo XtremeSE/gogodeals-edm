@@ -80,12 +80,12 @@ loop(Database) ->
 			case Topic of
 		                <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select * From users Where email =? and password = ?">>, Data),
+		                                mysql:query(Database, <<"Select * From users Where email =? and password = ?">>, jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/client/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-			                	mysql:query(Database, "Select * From clients Where email =? and password = ?", Data),
+			                	mysql:query(Database, "Select * From clients Where email =? and password = ?", jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
@@ -93,9 +93,12 @@ loop(Database) ->
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1);
 
 		                <<"deal/gogodeals/deal/fetch">> -> %% From Application
-		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, "Select * From deals Where longitude <= ? + 0.2 and longitude >= ? - 0.2 and 
-									latitude <= ? + 0.2 and latitude >= ? - 0,2 and filters in (?) and id not in (?)", jtm:get_values(Data)),
+		                        {ok, ColumnNames, Rows} = 		                                
+						Long = [[V + 0.2, V - 0.2] || {_, V} <- maps:find( <<"longitude">>, Data)],
+						Lat = [[V + 0.2, V - 0.2] || {_, V} <- maps:find( <<"latitude">>, Data)],
+						Other = [ Y || {_,Y} <- [maps:find(X, Data) || X <- maps:keys(Data), X /= <<"longitude">>, X /= <<"latitude">>]],
+						mysql:query(Database, "Select * From deals Where longitude in (?) and 
+									latitude in (?) and filters in (?) and id not in (?)", [Long, Lat, Other]),
                 			edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
