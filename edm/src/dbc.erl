@@ -31,9 +31,9 @@ handle_call(Action, From, Topic, Payload) ->
 %% Connect to a mysql database.
 %% Initialize an internal serverloop.
 init() ->
-        {ok, Pid} = mysql:start_link([{host, "localhost"}, 
+        {ok, Pid} = mysql:start_link([{host, "129.16.155.11"}, 
                                         {user, "root"},
-                                        {password, "Mammamu77"}, 
+                                        {password, "password"}, 
                                         {database, "gogodeals"}]),
 	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),
