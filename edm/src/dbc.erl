@@ -97,10 +97,18 @@ loop(Database) ->
 					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
 					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
 					LatMax = [V + 0.2 || {<<"latitude">>, V} <- Data],
-					Filters = [binary_to_list(V) || {<<"filters">>,V} <- Data],
-					Deals = [ binary_to_list(V) || {<<"deals">>,V} <- Data],
+					F = [binary_to_list(V) || {<<"filters">>,V} <- Data],
+					case F of
+						[] -> Filters = "";
+						_ -> Filters = " and filters in " ++ F ++ ""
+					end,
+					D =  [binary_to_list(V) || {<<"deals">>,V} <- Data],
+					case D of
+						[] -> Deals = "";
+						_ -> Deals = " and id not in " ++ D ++ ""
+					end,
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where longitude between ? and ? and 
-									latitude between ? and ? and filters in (?) and id not in (?)", LongMin ++ LongMax ++ LatMin ++ LatMax ++ Filters ++ Deals),
+									latitude between ? and ?", LongMin ++ LongMax ++ LatMin ++ LatMax),
                 			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
@@ -122,11 +130,9 @@ loop(Database) ->
 		
 		                <<"deal/gogodeals/deal/save">> -> 
 		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort([<<"deals">>,<<"id">>], Data)),
-					io:format("Step: ~p~n", ["0"]),
 					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", jtm:get_id(Message)),
-					io:format("Step: ~p~n", ["1"]),
+					mysql:query(Database, "insert into verify(user_id, deal_id) values (?,?)", jtm:get_id(Message) ++ jtm:get_data_value(<<"deal">>)),
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select count From deals Where id = ?", jtm:get_id(Message)),
-					io:format("Step: ~p~n", Rows),
                 			[Id] = jtm:get_id(Message), 
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		
