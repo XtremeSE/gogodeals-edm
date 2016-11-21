@@ -33,7 +33,7 @@ handle_call(Action, From, Topic, Payload) ->
 init() ->
         {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
-                                        {password, "Mammamu77"}, 
+                                        {password, "password"}, 
                                         {database, "gogodeals"}]),
 	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),
