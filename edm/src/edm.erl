@@ -27,7 +27,7 @@ publish(From, Topic, Message, Qos) ->
 %%====================================================================
 
 init() ->
-	{ok, Client} = emqttc:start_link([{host, "176.10.136.208"},{client_id, <<"databaseControllerClient">>}, {keepalive, 0}, {proto_ver, 3}]),
+	{ok, Client} = emqttc:start_link([{host, "176.10.136.208"},{client_id, <<"databaseControllerClient">>}, {keepalive, 0}, {proto_ver, 31}]),
 	emqttc:subscribe(Client, [	%% Client/Customer
 					{<<"deal/gogodeals/deal/info">>, 1},
 				        {<<"deal/gogodeals/deal/new">>, 1},

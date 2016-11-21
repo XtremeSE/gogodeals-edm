@@ -31,9 +31,9 @@ handle_call(Action, From, Topic, Payload) ->
 %% Connect to a mysql database.
 %% Initialize an internal serverloop.
 init() ->
-        {ok, Pid} = mysql:start_link([{host, "129.16.155.11"}, 
+        {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
-                                        {password, "password"}, 
+                                        {password, "Mammamu77"}, 
                                         {database, "gogodeals"}]),
 	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),
@@ -51,7 +51,7 @@ loop(Database) ->
 		                <<"deal/gogodeals/deal/new">> -> 
 		                        Stmt = "INSERT INTO deals (" 
 		                                ++ jtm:get_key(Data) 
-		                                ++ ") VALUES (?,?,?,?,?,?,?,?,?)", %% name, description, picture, longitude, latitude, duration, count, filters, client_id
+		                                ++ ") VALUES (?,?,?,?,?,?,?,?,?,?)", %% name, description, picture, longitude, latitude, duration, count, filters, client_id
 		                        Values = jtm:get_values(Data),
 		                        mysql:query(Database, Stmt, Values);
 		                        
@@ -92,14 +92,16 @@ loop(Database) ->
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1);
 
-		                <<"deal/gogodeals/deal/fetch">> -> %% From Application
-		                        {ok, ColumnNames, Rows} = 		                                
-						Long = [[V + 0.2, V - 0.2] || {_, V} <- maps:find( <<"longitude">>, Data)],
-						Lat = [[V + 0.2, V - 0.2] || {_, V} <- maps:find( <<"latitude">>, Data)],
-						Other = [ Y || {_,Y} <- [maps:find(X, Data) || X <- maps:keys(Data), X /= <<"longitude">>, X /= <<"latitude">>]],
-						mysql:query(Database, "Select * From deals Where longitude in (?) and 
-									latitude in (?) and filters in (?) and id not in (?)", [Long, Lat, Other]),
-                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_map(ColumnNames, Rows)}, 1)
+		                <<"deal/gogodeals/deal/fetch">> -> %% From Application 		                                
+					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- Data],
+					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
+					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
+					LatMax = [V + 0.2 || {<<"latitude">>, V} <- Data],
+					Filters = [binary_to_list(V) || {<<"filters">>,V} <- Data],
+					Deals = [ binary_to_list(V) || {<<"deals">>,V} <- Data],
+					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where longitude between ? and ? and 
+									latitude between ? and ? and filters in (?) and id not in (?)", LongMin ++ LongMax ++ LatMin ++ LatMax ++ Filters ++ Deals),
+                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
 			

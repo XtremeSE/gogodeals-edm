@@ -6,7 +6,7 @@
 -module(jtm).
 
 %% API exports
--export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1]).
+-export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1, get_filters/1]).
 
 
 
@@ -87,6 +87,9 @@ get_action(Topic) ->
 to_payload({Id, MapOfArguments}) -> 
         Payload = #{ id => Id, data => MapOfArguments},
 	jsx:encode(Payload).
+
+get_filters([]) -> [];
+get_filters(ListOfWords) -> [string:sub_word(ListOfWords, 1)] ++ get_filters(string:sub_string(ListOfWords, string:chr(ListOfWords, ","))).
         
 
 %%====================================================================
