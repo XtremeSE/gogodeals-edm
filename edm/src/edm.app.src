@@ -1,13 +1,13 @@
 {application, edm,
- [{description, "An OTP library"},
+ [{description, "A MQTT to MySQL handler"},
   {vsn, "0.1.0"},
-  {registered, []},
+  {registered, [edm, dbc]},
   {applications,
    [kernel,
     stdlib
    ]},
   {env,[]},
-  {modules, []},
+  {modules, [sup, edm, dbc, jtm]},
 
   {maintainers, []},
   {licenses, []},

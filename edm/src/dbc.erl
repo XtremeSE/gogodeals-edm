@@ -33,7 +33,7 @@ handle_call(Action, From, Topic, Payload) ->
 init() ->
         {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
-                                        {password, "password"}, 
+                                        {password, "Mammamu77"}, 
                                         {database, "gogodeals"}]),
 	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),
@@ -97,18 +97,13 @@ loop(Database) ->
 					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
 					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
 					LatMax = [V + 0.2 || {<<"latitude">>, V} <- Data],
-					F = [binary_to_list(V) || {<<"filters">>,V} <- Data],
-					case F of
-						[] -> Filters = "";
-						_ -> Filters = " and filters in " ++ F ++ ""
-					end,
-					D =  [binary_to_list(V) || {<<"deals">>,V} <- Data],
-					case D of
-						[] -> Deals = "";
-						_ -> Deals = " and id not in " ++ D ++ ""
-					end,
+					Filters = [ binary_to_list(V) || {<<"filters">>,V} <- Data],
+					%io:format("Filter: ~p~n", Filters),
+					Deals = [ binary_to_list(V) || {<<"deals">>,V} <- Data],
+					%io:format("Deals: ~p~n", Deals),
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where longitude between ? and ? and 
-									latitude between ? and ?", LongMin ++ LongMax ++ LatMin ++ LatMax),
+									latitude between ? and ?", 
+									LongMin ++ LongMax ++ LatMin ++ LatMax),
                 			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(1, ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
@@ -126,19 +121,33 @@ loop(Database) ->
 		                <<"deal/gogodeals/client/edit">> -> 
 		                        mysql:query(Database, "UPDATE clients SET name = ?, longitude = ?, latitude = ?, email = ?, 
 			                        password = ? WHERE id = ?", 
-						jtm:stupid_sort(["name","longitude", "latitude","email","password"], Data));
+						jtm:stupid_sort([<<"name">>,<<"longitude">>, <<"latitude">>,<<"email">>,<<"password">>], Data) ++ jtm:get_id(Message));
 		
 		                <<"deal/gogodeals/deal/save">> -> 
-		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort([<<"deals">>,<<"id">>], Data)),
-					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", jtm:get_id(Message)),
-					mysql:query(Database, "insert into verify(user_id, deal_id) values (?,?)", jtm:get_id(Message) ++ jtm:get_data_value(<<"deal">>)),
-					{ok, ColumnNames, Rows} = mysql:query(Database, "Select count From deals Where id = ?", jtm:get_id(Message)),
                 			[Id] = jtm:get_id(Message), 
+		                        mysql:query(Database, "insert into userdeals(deal_id, user_id) values (?,?)", 
+						[Id] ++ jtm:get_values(Data)),
+					
+					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", [Id]),
+					
+					mysql:query(Database, "insert into verify(deal_id, user_id) values (?,?)", 
+						[Id] ++ jtm:get_values(Data)),
+
+					{ok, ColumnNames, Rows} = mysql:query(Database, 
+							"Select deals.count, verify.id From deals inner join verify on deals.id = ? and verify.user_id = ?", 
+							[Id] ++ jtm:get_values(Data)),
+
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		
 		                <<"deal/gogodeals/deal/remove">> -> %% From Application
-		                        mysql:query(Database, "UPDATE users SET deals = ? WHERE id = ?", jtm:stupid_sort(["deals","id"], Data)),
-					mysql:query(Database, "UPDATE deals SET count = count + 1 WHERE id = ?", jtm:get_id(Message));
+		                        mysql:query(Database, "delete from userdeals where deal_id = ? and user_id = ?", 
+						jtm:get_id(Message) ++ jtm:get_values(Data)),
+					
+					mysql:query(Database, "UPDATE deals SET count = count + 1 WHERE id = ?", 
+						jtm:get_id(Message)),
+
+					mysql:query(Database, "delete from verify where deal_id = ?, user_id = ?", 
+						jtm:get_id(Message) ++ jtm:get_values(Data));
 
 		                <<"deal/gogodeals/user/filter">> -> 
 		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:stupid_sort(["filters","id"],Data));
@@ -162,9 +171,9 @@ loop(Database) ->
 
 
 %% Convert a list of ColumnNames and a list of Rows into a map
-to_deal_map(_Counter, _ColumnNames, []) -> #{};
-to_deal_map(Counter, ColumnNames, [R|[]]) -> [{Counter, to_map(ColumnNames, [R])}];
-to_deal_map(Counter, ColumnNames, [R|Rs]) -> maps:from_list([{Counter, to_map(ColumnNames, [R])}] ++ to_deal_map(Counter+1, ColumnNames, Rs)).
+to_deal_map(_ColumnNames, []) -> #{};
+to_deal_map(ColumnNames, [R|[]]) -> [{"£", to_map(ColumnNames, [R])}];
+to_deal_map(ColumnNames, [R|Rs]) -> maps:from_list([{"£", to_map(ColumnNames, [R])}] ++ to_deal_map("£", ColumnNames, Rs)).
 
 %to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
