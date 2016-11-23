@@ -143,19 +143,27 @@ loop(Database) ->
 					mysql:query(Database, "UPDATE deals SET count = count + 1 WHERE id = ?", 
 						jtm:get_id(Message)),
 
-					mysql:query(Database, "delete from verify where deal_id = ?, user_id = ?", 
+					mysql:query(Database, "delete from verify where deal_id = ? and user_id = ?", 
 						jtm:get_id(Message) ++ jtm:get_values(Data));
 
 		                <<"deal/gogodeals/user/filter">> -> 
 		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:stupid_sort(["filters","id"],Data));
 
-		                <<"deal/gogodeals/deal/verify">> -> todo
+		                <<"deal/gogodeals/deal/verify">> -> 
+					[Id] = jtm:get_id(Message),
+					{ok, ColumnNames, Rows} = mysql:query(Database, 
+						"Select user_id from verify where id = ?", [Id]),
+
+					edm:publish(From, <<"deal/gogodeals/database/verified">>, {Id, to_map(ColumnNames, Rows)}, 1),
+					
+					mysql:query(Database, "delete from verify where id = ?", [Id])					
+
 	                end,
 			%%From ! {ok, updated},
 			loop(Database);
 		
 		%% Delete data in the database according to the content of the Message
-		{delete, From, Topic, Message} -> 
+		{delete, _From, Topic, Message} -> 
 			case Topic of
 		                <<"deal/gogodeals/client/delete">> -> 
 		                        mysql:query(Database, "DELETE FROM clients WHERE id = ?", jtm:get_id(Message));
@@ -163,7 +171,9 @@ loop(Database) ->
 		                <<"deal/gogodeals/deal/delete">> -> 
 		                        mysql:query(Database, "DELETE FROM deals WHERE id = ?", jtm:get_id(Message))
 	                end,
-			loop(Database)
+			loop(Database);
+		
+		_ -> loop(Database)
 	end.
 
 

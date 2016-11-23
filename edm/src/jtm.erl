@@ -80,7 +80,8 @@ get_action(Topic) ->
 		
 		<<"deal/gogodeals/user/info">> -> select;
 		<<"deal/gogodeals/user/new">> -> insert;
-		<<"deal/gogodeals/user/filter">> -> update
+		<<"deal/gogodeals/user/filter">> -> update;
+		_ -> unknown
         end.
 
 %% Converts a tuple of {Id, Encryption, MapOfArguments} into a payload message adhearing to the RFC Deal Message Transfer
