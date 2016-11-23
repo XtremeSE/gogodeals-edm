@@ -90,21 +90,18 @@ loop(Database) ->
 		                
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
-					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(1,ColumnNames, Rows)}, 1);
 
 		                <<"deal/gogodeals/deal/fetch">> -> %% From Application 		                                
 					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- Data],
 					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
 					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
 					LatMax = [V + 0.2 || {<<"latitude">>, V} <- Data],
-					Filters = [ binary_to_list(V) || {<<"filters">>,V} <- Data],
-					%io:format("Filter: ~p~n", Filters),
-					Deals = [ binary_to_list(V) || {<<"deals">>,V} <- Data],
-					%io:format("Deals: ~p~n", Deals),
+					Filters = [binary_to_list(V) || {<<"filters">>, V} <- Data],
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where longitude between ? and ? and 
-									latitude between ? and ?", 
-									LongMin ++ LongMax ++ LatMin ++ LatMax),
-                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1)
+									latitude between ? and ? and filters in(?)", 
+									LongMin ++ LongMax ++ LatMin ++ LatMax ++ [Filters]),
+                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(1,ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
 			
@@ -171,13 +168,18 @@ loop(Database) ->
 
 
 %% Convert a list of ColumnNames and a list of Rows into a map
-to_deal_map(_ColumnNames, []) -> #{};
-to_deal_map(ColumnNames, [R|[]]) -> [{"£", to_map(ColumnNames, [R])}];
-to_deal_map(ColumnNames, [R|Rs]) -> maps:from_list([{"£", to_map(ColumnNames, [R])}] ++ to_deal_map(ColumnNames, Rs)).
+to_deal_map(_Count, _ColumnNames, []) -> #{};
+to_deal_map(Count, ColumnNames, [R|[]]) -> [{Count, to_map(ColumnNames, [R])}];
+to_deal_map(Count, ColumnNames, [R|Rs]) -> maps:from_list([{Count, to_map(ColumnNames, [R])}] ++ to_deal_map(Count + 1, ColumnNames, Rs)).
 
 %to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
 	maps:from_list(lists:zip(ColumnNames, Rows)).
+
+
+special_string([]) -> [];
+special_string([V|[]]) -> "\"" ++ V ++ "\"";
+special_string([V|Vs]) -> "\"" ++ V ++ "\", " ++ special_string(Vs).
 
 
