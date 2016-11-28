@@ -45,7 +45,7 @@ loop(Database) ->
 	receive
 		%% Insert the content of a Message into the expected 
 		%% table in the database
-		{insert, _From, Topic, Message} -> 
+		{insert, From, Topic, Message} -> 
 			Data = jtm:get_data(Message),
 			case Topic of
 		                <<"deal/gogodeals/deal/new">> -> 
@@ -60,7 +60,9 @@ loop(Database) ->
 		                                "INSERT INTO clients (" 
 		                                ++ jtm:get_key(Data) 
 		                                ++ ") VALUES (?,?,?,?,?)", %% name, email, password, longitude, latitude
-		                                jtm:get_values(Data));
+		                                jtm:get_values(Data)),
+					[Id] = jtm:get_id(Message),
+					edm:publish(From, <<"deal/gogodeals/database/new">>, {Id, "client added"}, 1);
 		                        
 		                <<"deal/gogodeals/user/new">> -> 
 		                        mysql:query(Database, 
@@ -131,7 +133,7 @@ loop(Database) ->
 						[Id] ++ jtm:get_values(Data)),
 
 					{ok, ColumnNames, Rows} = mysql:query(Database, 
-							"Select deals.count, verify.id From deals inner join verify on deals.id = ? and verify.user_id = ?", 
+							"select deals.count, verify.id from deals, verify where deals.id = ? and verify.user_id = ? and verify.deal_id = deals.id", 
 							[Id] ++ jtm:get_values(Data)),
 
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
