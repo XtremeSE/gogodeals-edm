@@ -33,9 +33,10 @@ handle_call(Action, From, Topic, Payload) ->
 init() ->
         {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
-                                        {password, "password"}, 
+                                        {password, "Mammamu77"}, 
                                         {database, "gogodeals"}]),
-	Db = spawn(fun () -> loop(Pid) end),
+	process_flag(trap_exit, true),	
+	Db = spawn_link(fun () -> loop(Pid) end),
 	register(database, Db),
 	{ok, Pid}.
 
@@ -62,7 +63,7 @@ loop(Database) ->
 		                                ++ ") VALUES (?,?,?,?,?)", %% name, email, password, longitude, latitude
 		                                jtm:get_values(Data)),
 					[Id] = jtm:get_id(Message),
-					edm:publish(From, <<"deal/gogodeals/database/new">>, {Id, "client added"}, 1);
+					edm:publish(From, <<"deal/gogodeals/database/new">>, {Id, true}, 1);
 		                        
 		                <<"deal/gogodeals/user/new">> -> 
 		                        mysql:query(Database, 
