@@ -33,7 +33,7 @@ handle_call(Action, From, Topic, Payload) ->
 init() ->
         {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
-                                        {password, "Mammamu77"}, 
+                                        {password, "password"}, 
                                         {database, "gogodeals"}]),
 	process_flag(trap_exit, true),	
 	Db = spawn_link(fun () -> loop(Pid) end),
@@ -134,7 +134,7 @@ loop(Database) ->
 						[Id] ++ jtm:get_values(Data)),
 
 					{ok, ColumnNames, Rows} = mysql:query(Database, 
-							"select deals.count, verify.id from deals, verify where deals.id = ? and verify.user_id = ? and verify.deal_id = deals.id", 
+							"select deals.count, verify.id from deals, verify where deals.id = ? and verify.deal_id = deals.id", 
 							[Id] ++ jtm:get_values(Data)),
 
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
