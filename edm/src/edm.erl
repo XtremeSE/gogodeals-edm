@@ -59,8 +59,9 @@ broker_loop(Client) ->
                         broker_loop(Client);
 
                 %% Stop the loop as a part of stopping the client
-                stop ->
-                        exit(broker, normal)
+                stop -> exit(broker, normal);
+
+		{error, _} -> start()
                         
 	end.
 

@@ -33,9 +33,8 @@ handle_call(Action, From, Topic, Payload) ->
 init() ->
         {ok, Pid} = mysql:start_link([{host, "localhost"}, 
                                         {user, "root"},
-                                        {password, "password"}, 
-                                        {database, "gogodeals"}]),
-	process_flag(trap_exit, true),	
+                                        {password, "Mammamu77"}, 
+                                        {database, "gogodeals"}]),	
 	Db = spawn_link(fun () -> loop(Pid) end),
 	register(database, Db),
 	{ok, Pid}.
@@ -83,13 +82,13 @@ loop(Database) ->
 			case Topic of
 		                <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select * From users Where email =? and password = ?">>, jtm:get_values(Data)),
+		                                mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/client/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
-			                	mysql:query(Database, "Select * From clients Where email =? and password = ?", jtm:get_values(Data)),
-					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
+			                	mysql:query(Database, "Select * From clients Where email = ? and password = ?", jtm:get_values(Data)),
+					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
