@@ -92,7 +92,7 @@ loop(Database) ->
 		                
 		                <<"deal/gogodeals/deal/info">> -> %% From Website
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
-					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
+					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
 		                <<"deal/gogodeals/deal/fetch">> -> %% From Application 		                                
 					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- Data],
