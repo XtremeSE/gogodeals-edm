@@ -84,10 +84,14 @@ get_action(Topic) ->
 		_ -> unknown
         end.
 
-%% Converts a tuple of {Id, Encryption, MapOfArguments} into a payload message adhearing to the RFC Deal Message Transfer
+%% Converts a tuple of {Id, MapOfArguments} into a payload message
 to_payload({Id, MapOfArguments}) -> 
         Payload = #{ id => Id, data => MapOfArguments},
 	jsx:encode(Payload).
+
+%to_payload({Id, List, Request}) ->
+%	Payload = #{ client_id => Id, list => List, request => Request},
+%	jsx:encode(Payload).
 
 get_filters([]) -> [];
 get_filters(ListOfWords) -> [string:sub_word(ListOfWords, 1)] ++ get_filters(string:sub_string(ListOfWords, string:chr(ListOfWords, ","))).

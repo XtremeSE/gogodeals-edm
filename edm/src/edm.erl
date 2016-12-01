@@ -19,7 +19,7 @@ start() -> init().
 %% Publish messages to the broker
 publish(From, Topic, Message, Qos) ->
         Payload = jtm:to_payload(Message),
-        emqttc:publish(From, Topic, Payload, [{qos, Qos}]),
+	emqttc:publish(From, Topic, Payload, [{qos, Qos}]),
 	io:format("Step: ~p~n", ["4"]).
 
 %%====================================================================

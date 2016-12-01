@@ -31,9 +31,9 @@ handle_call(Action, From, Topic, Payload) ->
 %% Connect to a mysql database.
 %% Initialize an internal serverloop.
 init() ->
-        {ok, Pid} = mysql:start_link([{host, "localhost"}, 
+        {ok, Pid} = mysql:start_link([{host, "129.16.155.11"}, 
                                         {user, "root"},
-                                        {password, "Mammamu77"}, 
+                                        {password, "password"}, 
                                         {database, "gogodeals"}]),	
 	Db = spawn_link(fun () -> loop(Pid) end),
 	register(database, Db),
@@ -104,6 +104,10 @@ loop(Database) ->
 									latitude between ? and ? and filters in(?)", 
 									LongMin ++ LongMax ++ LatMin ++ LatMax ++ [Filters]),
                 			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1)
+
+				%<<"deals/gogodeals/user/gro">> ->
+					%{ok, ColumnNames, [Rows]} = mysql:query(Database, "Select email From users Where id = ?", [Id]),
+					%edm:publish(From, <<"Gro/" ++ Rows>>, {Rows, "food", "fetch"}, 1);
 	                end,
 	                loop(Database);
 			
@@ -134,7 +138,7 @@ loop(Database) ->
 
 					{ok, ColumnNames, Rows} = mysql:query(Database, 
 							"select deals.count, verify.id from deals, verify where deals.id = ? and verify.deal_id = deals.id", 
-							[Id] ++ jtm:get_values(Data)),
+							[Id]),
 
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		
