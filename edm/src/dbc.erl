@@ -83,7 +83,7 @@ loop(Database) ->
 		                <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
-					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
+					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
 		                <<"deal/gogodeals/client/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
