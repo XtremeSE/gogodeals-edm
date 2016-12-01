@@ -103,11 +103,11 @@ loop(Database) ->
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where longitude between ? and ? and 
 									latitude between ? and ? and filters in(?)", 
 									LongMin ++ LongMax ++ LatMin ++ LatMax ++ [Filters]),
-                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1)
+                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
-				%<<"deals/gogodeals/user/gro">> ->
-					%{ok, ColumnNames, [Rows]} = mysql:query(Database, "Select email From users Where id = ?", [Id]),
-					%edm:publish(From, <<"Gro/" ++ Rows>>, {Rows, "food", "fetch"}, 1);
+				<<"deals/gogodeals/deal/grocode">> ->
+					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where name in (?)", jtm:get_values(Data)),
+					edm:publish(From, <<"deal/gogodeals/database/grocode">>, {Id, to_deal_map(ColumnNames, Rows)}, 1)
 	                end,
 	                loop(Database);
 			
