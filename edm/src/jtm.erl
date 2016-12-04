@@ -79,6 +79,9 @@ get_action(Topic) ->
 		<<"deal/gogodeals/deal/verify">> -> update;
 		
 		<<"deal/gogodeals/user/info">> -> select;
+		<<"deal/gogodeals/user/facebook">> -> insert;
+		<<"deals/gogodeals/deal/grocode">> -> select;
+		<<"deal/gogodeals/user/check">> -> select;
 		<<"deal/gogodeals/user/new">> -> insert;
 		<<"deal/gogodeals/user/filter">> -> update;
 		_ -> unknown

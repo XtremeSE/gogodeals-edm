@@ -29,8 +29,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 0, 1}, [{dbc, {dbc, start, []}, 
-        permanent, brutal_kill, worker, [dbc]}]}}.
+    {ok, { {simple_one_for_one, 10, 60}, [{dbc, {dbc, start, []}, transient, brutal_kill, worker, [dbc]}]}}.
 
 %%====================================================================
 %% Internal functions

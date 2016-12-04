@@ -40,11 +40,14 @@ init() ->
 					
 					%% User
 					{<<"deal/gogodeals/deal/fetch">>, 1},
+					{<<"deals/gogodeals/deal/grocode">>, 1},
+					{<<"deal/gogodeals/user/check">>, 1},
 					{<<"deal/gogodeals/deal/save">>, 1},
 					{<<"deal/gogodeals/deal/remove">>, 1},
 					{<<"deal/gogodeals/deal/verify">>, 1},
 					{<<"deal/gogodeals/user/info">>, 1},
 					{<<"deal/gogodeals/user/new">>, 1},
+					{<<"deal/gogodeals/user/facebook">>,1},
 					{<<"deal/gogodeals/user/filter">>, 1}]),
         broker_loop(Client),
 	register(client, Client).
