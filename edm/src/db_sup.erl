@@ -20,8 +20,8 @@
 %%====================================================================
 
 start_link() ->
-    %%supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-      supervisor:start_link(db_sup, []).  
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+     %% supervisor:start_link(db_sup, []).  
         
 %%====================================================================
 %% Supervisor callbacks
@@ -29,7 +29,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {simple_one_for_one, 10, 60}, [{dbc, {dbc, start, []}, transient, brutal_kill, worker, [dbc]}]}}.
+    {ok, { {simple_one_for_one, 10, 60}, [{dbc, {dbc, start, []}, transient, 1000, worker, [dbc]}]}}.
 
 %%====================================================================
 %% Internal functions

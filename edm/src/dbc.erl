@@ -37,7 +37,7 @@ init() ->
                                         {database, "gogodeals"}]),	
 	Db = spawn_link(fun () -> loop(Pid) end),
 	register(database, Db),
-	link(Pid),	
+	register(local, Pid),	
 	{ok, Pid}.
 
 
@@ -81,10 +81,10 @@ loop(Database) ->
 								", password) values (?,?,\"facebook\")", jtm:get_values(Data)),
 							{ok, ColumnNames, Rows} = 
 		                                		mysql:query(Database, <<"Select * From users Where email = ? and name = ?">>, jtm:get_values(Data)),
-								edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
+								edm:publish(From, <<"deal/gogodeals/facebook/database">>, {Id, to_map(ColumnNames, Rows)}, 1);
 
 						{ok, ColumnNames, Rows} -> 
-							edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1)
+							edm:publish(From, <<"deal/gogodeals/database/facebook">>, {Id, to_map(ColumnNames, Rows)}, 1)
 						
 					end
 					
@@ -136,21 +136,23 @@ loop(Database) ->
 	                loop(Database);
 			
 		%% Update the content of a Message into the expected table in the database
-		{update, From, Topic, Message} -> 
-		        Data = jtm:get_data(Message),
+		{update, From, Topic, Message} ->
 			case Topic of
 		                <<"deal/gogodeals/deal/edit">> -> 
-		                        mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, 
+					Data = jtm:get_data(Message),		                        
+					mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, 
 		                        	description = ?, duration = ?, count = ? WHERE id = ?", 
 						jtm:stupid_sort([<<"name">>, <<"price">>, <<"picture">>, <<"description">>, 
 							<<"duration">>, <<"count">>],Data) ++ jtm:get_id(Message));
 		
 		                <<"deal/gogodeals/client/edit">> -> 
+					Data = jtm:get_data(Message),
 		                        mysql:query(Database, "UPDATE clients SET name = ?, longitude = ?, latitude = ?, email = ?, 
 			                        password = ? WHERE id = ?", 
 						jtm:stupid_sort([<<"name">>,<<"longitude">>, <<"latitude">>,<<"email">>,<<"password">>], Data) ++ jtm:get_id(Message));
 		
 		                <<"deal/gogodeals/deal/save">> -> 
+					Data = jtm:get_data(Message),
                 			[Id] = jtm:get_id(Message), 
 		                        mysql:query(Database, "insert into userdeals(deal_id, user_id) values (?,?)", 
 						[Id] ++ jtm:get_values(Data)),
@@ -167,6 +169,7 @@ loop(Database) ->
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		
 		                <<"deal/gogodeals/deal/remove">> -> %% From Application
+					Data = jtm:get_data(Message),
 		                        mysql:query(Database, "delete from userdeals where deal_id = ? and user_id = ?", 
 						jtm:get_id(Message) ++ jtm:get_values(Data)),
 					
@@ -177,6 +180,7 @@ loop(Database) ->
 						jtm:get_id(Message) ++ jtm:get_values(Data));
 
 		                <<"deal/gogodeals/user/">> -> 
+					Data = jtm:get_data(Message),
 		                        mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:stupid_sort(["filters","id"],Data));
 
 		                <<"deal/gogodeals/deal/verify">> -> 

@@ -29,8 +29,9 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 5, 10}, [
-                                        {dbc, {dbc, start, []}, permanent, infinity, worker, [dbc]},
+    {ok, { {one_for_one, 5, 60}, [
+					%{db_sup, {db_sup, start_link, []}, transient, infinity, supervisor, [db_sup]}                                        
+					{dbc, {dbc, start, []}, permanent, infinity, worker, [dbc]},
                                         {edm, {edm, start, []}, permanent, infinity, worker, [edm]}
                                 ]}}.
 
