@@ -19,8 +19,8 @@
 %% API functions
 %%====================================================================
 
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(Args) ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, [Args]).
      %% supervisor:start_link(db_sup, []).  
         
 %%====================================================================
@@ -28,8 +28,8 @@ start_link() ->
 %%====================================================================
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
-init([]) ->
-    {ok, { {simple_one_for_one, 10, 60}, [{dbc, {dbc, start, []}, transient, 1000, worker, [dbc]}]}}.
+init(Args) ->
+    {ok, { {simple_one_for_one, 10, 60}, [{dbc, {dbc, start, [Args]}, transient, 1000, worker, [dbc]}]}}.
 
 %%====================================================================
 %% Internal functions

@@ -32,7 +32,7 @@ init([]) ->
 	Database = [{host, "129.16.155.11"},{user, "root"},{password, "password"},{database, "gogodeals"}], 
 	LocalDb = [{host, "localhost"},{user, "root"},{password, "password"},{database, "gogodeals"}],
 
-	Prata = [{host, "54.154.153.243"},{client_id, <<"databaseControllerClient">>}, {keepalive, 0}, {proto_ver, 31}],
+	Prata = [{host, "54.154.153.243"},{client_id, <<"gogodealsAwesomeClient">>}, {keepalive, 0}, {proto_ver, 31}],
 	Testing = [{host, "176.10.136.208"},{client_id, <<"bob">>}, {keepalive, 0}, {proto_ver, 31}],
 	
 	{ok, { {one_for_all, 5, 10}, [
