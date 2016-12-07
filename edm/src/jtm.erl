@@ -74,14 +74,15 @@ get_action(Topic) ->
 		<<"deal/gogodeals/client/delete">> -> delete;
 		
 		<<"deal/gogodeals/deal/fetch">> -> select;
+		<<"deals/gogodeals/deal/grocode">> -> select;
 		<<"deal/gogodeals/deal/save">> -> update;
 		<<"deal/gogodeals/deal/remove">> -> update;
 		<<"deal/gogodeals/deal/verify">> -> update;
 		
 		<<"deal/gogodeals/user/info">> -> select;
-		<<"deal/gogodeals/user/facebook">> -> insert;
-		<<"deals/gogodeals/deal/grocode">> -> select;
 		<<"deal/gogodeals/user/check">> -> select;
+		<<"deal/gogodeals/user/update">> -> select;
+		<<"deal/gogodeals/user/facebook">> -> insert;
 		<<"deal/gogodeals/user/new">> -> insert;
 		<<"deal/gogodeals/user/filter">> -> update;
 		_ -> unknown

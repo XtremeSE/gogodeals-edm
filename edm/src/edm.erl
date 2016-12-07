@@ -7,14 +7,16 @@
 -module(edm).
 
 %% API
--export([start/0, publish/4]).
+-export([start/1, publish/4]).
+
+-export([init/1]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
 %% Start a connection to a broker
-start() -> init().
+start(Args) -> init(Args).
 
 %% Publish messages to the broker
 publish(From, Topic, Message, Qos) ->
@@ -26,8 +28,10 @@ publish(From, Topic, Message, Qos) ->
 %% Internal functions
 %%====================================================================
 
-init() ->
-	{ok, Client} = emqttc:start_link([{host, "176.10.136.208"},{client_id, <<"databaseControllerClient">>}, {keepalive, 0}, {proto_ver, 31}]),
+init(Args) ->
+	{ok, Client} = emqttc:start_link(Args),
+	process_flag(trap_exit, true),	
+	link(Client),	
 	emqttc:subscribe(Client, [	%% Client/Customer
 					{<<"deal/gogodeals/deal/info">>, 1},
 				        {<<"deal/gogodeals/deal/new">>, 1},
@@ -48,6 +52,7 @@ init() ->
 					{<<"deal/gogodeals/user/info">>, 1},
 					{<<"deal/gogodeals/user/new">>, 1},
 					{<<"deal/gogodeals/user/facebook">>,1},
+					{<<"deal/gogodeals/user/update">>,1},
 					{<<"deal/gogodeals/user/filter">>, 1}]),
         broker_loop(Client),
 	register(client, Client).
@@ -62,9 +67,7 @@ broker_loop(Client) ->
                         broker_loop(Client);
 
                 %% Stop the loop as a part of stopping the client
-                stop -> exit(broker, normal);
-
-		{error, _} -> start()
+                stop -> exit(broker, normal)
                         
 	end.
 
