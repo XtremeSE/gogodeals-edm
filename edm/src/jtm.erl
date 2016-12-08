@@ -81,7 +81,7 @@ get_action(Topic) ->
 		
 		<<"deal/gogodeals/user/info">> -> select;
 		<<"deal/gogodeals/user/check">> -> select;
-		<<"deal/gogodeals/user/update">> -> select;
+		<<"deal/gogodeals/user/update">> -> update;
 		<<"deal/gogodeals/user/facebook">> -> insert;
 		<<"deal/gogodeals/user/new">> -> insert;
 		<<"deal/gogodeals/user/filter">> -> update;

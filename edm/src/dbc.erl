@@ -100,7 +100,7 @@ loop(Database) ->
 			Data = jtm:get_data(Message),
 		        [Id] = jtm:get_id(Message),
 			case Topic of
-		                <<"deal/gogodeals/user/info">> -> 
+		      <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
