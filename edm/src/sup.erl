@@ -37,9 +37,9 @@ init([]) ->
 	
 	{ok, { {one_for_all, 5, 10}, [
 					%{db_sup, {db_sup, start_link, []}, transient, infinity, supervisor, [db_sup]}                                        
-					{dbc, {dbc, start, [Database]}, permanent, brutal_kill, worker, [dbc]},
-                                        %{prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, [edm]}
-					{testing, {edm, start, [Testing]}, transient, infinity, worker, [edm]}
+					{dbc, {dbc, start, [Database]}, permanent, brutal_kill, worker, []},
+               {prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, []}
+					%{testing, {edm, start, [Testing]}, transient, infinity, worker, []}
                                 ]}}.
 
 %%====================================================================

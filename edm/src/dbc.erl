@@ -189,7 +189,7 @@ loop(Database) ->
 		                <<"deal/gogodeals/user/update">> -> 
 					Data = jtm:get_data(Message),
 					[Id] = jtm:get_id(Message),		                        
-					mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:stupid_sort(["filters","id"],Data)),
+					mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:get_values(Data) ++ [Id]),
 					{ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/update">>, {Id, to_map(ColumnNames, Rows)}, 1);
