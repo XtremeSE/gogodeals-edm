@@ -55,7 +55,8 @@ init(Args) ->
 					{<<"deal/gogodeals/user/update">>,1},
 					{<<"deal/gogodeals/user/filter">>, 1}]),
         broker_loop(Client),
-	register(client, Client).
+	register(client, Client),
+	{ok, Client}.
 
 
 broker_loop(Client) ->

@@ -15,7 +15,8 @@
 %%====================================================================
 
 %% Start a connection to a MySQL database
-start(Args) -> init(Args).
+start(Args) -> 
+	Pid = init(Args).
 
 %% Send a message to the database consisting of:
 %%      Action       :: What to do
@@ -33,12 +34,9 @@ handle_call(Action, From, Topic, Payload) ->
 %% Connect to a mysql database.
 %% Initialize an internal serverloop.
 init(Args) ->
-        {ok, Pid} = mysql:start_link(Args),	
-	process_flag(trap_exit, false),	
-	link(Pid),
-		
-	process_flag(trap_exit, false),
-	Db = spawn_link(fun () -> loop(Pid) end),
+   {ok, Pid} = mysql:start_link(Args),	
+	
+	Db = spawn(fun () -> loop(Pid) end),
 	register(database, Db),	
 	{ok, Pid}.
 
@@ -110,7 +108,7 @@ loop(Database) ->
 		                                mysql:query(Database, <<"Select * From users Where email = ?">>, jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/check">>, {Id, to_map(ColumnNames, Rows)}, 1);
 
-				<<"deal/gogodeals/user/filters">> ->
+				<<"deal/gogodeals/user/filter">> ->
 					{ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/filters">>, {Id, to_map(ColumnNames, Rows)}, 1);
@@ -186,13 +184,13 @@ loop(Database) ->
 					mysql:query(Database, "delete from verify where deal_id = ? and user_id = ?", 
 						jtm:get_id(Message) ++ jtm:get_values(Data));
 
-		                <<"deal/gogodeals/user/update">> -> 
-					Data = jtm:get_data(Message),
-					[Id] = jtm:get_id(Message),		                        
-					mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:get_values(Data) ++ [Id]),
-					{ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
-					edm:publish(From, <<"deal/gogodeals/database/update">>, {Id, to_map(ColumnNames, Rows)}, 1);
+			<<"deal/gogodeals/user/update">> -> 
+				Data = jtm:get_data(Message),
+				[Id] = jtm:get_id(Message),		                        
+				mysql:query(Database, "UPDATE users SET filters = ? WHERE id = ?", jtm:get_values(Data) ++ [Id]),
+				{ok, ColumnNames, Rows} = 
+		      	mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
+				edm:publish(From, <<"deal/gogodeals/database/update">>, {Id, to_map(ColumnNames, Rows)}, 1);
 
 		                <<"deal/gogodeals/deal/verify">> -> 
 					[Id] = jtm:get_id(Message),

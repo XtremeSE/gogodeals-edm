@@ -20,7 +20,7 @@
 %%====================================================================
 
 start_link(Args) ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, [Args]).
+    supervisor:start_link({local, ?SERVER}, ?MODULE, Args).
      %% supervisor:start_link(db_sup, []).  
         
 %%====================================================================
