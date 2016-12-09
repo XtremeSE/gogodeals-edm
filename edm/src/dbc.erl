@@ -15,8 +15,7 @@
 %%====================================================================
 
 %% Start a connection to a MySQL database
-start(Args) -> 
-	Pid = init(Args).
+start(Args) -> init(Args).
 
 %% Send a message to the database consisting of:
 %%      Action       :: What to do
@@ -47,7 +46,7 @@ loop(Database) ->
 		%% Insert the content of a Message into the expected 
 		%% table in the database
 		{insert, From, Topic, Message} -> 
-			D ata = jtm:get_data(Message),
+			Data = jtm:get_data(Message),
 			[Id] = jtm:get_id(Message),		                
 			case Topic of
 				<<"deal/gogodeals/deal/new">> -> 
@@ -136,8 +135,9 @@ loop(Database) ->
 				<<"deals/gogodeals/deal/grocode">> ->
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where name in (?)", jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/grocode">>, {Id, to_deal_map(ColumnNames, Rows)}, 1)
-	                end,
-	                loop(Database);
+	   	
+	   	end,
+	   	loop(Database);
 			
 		%% Update the content of a Message into the expected table in the database
 		{update, From, Topic, Message} ->
@@ -155,7 +155,7 @@ loop(Database) ->
 			                        password = ? WHERE id = ?", 
 						jtm:stupid_sort([<<"name">>,<<"longitude">>, <<"latitude">>,<<"email">>,<<"password">>], Data) ++ jtm:get_id(Message));
 		
-		                <<"deal/gogodeals/deal/save">> -> 
+		   <<"deal/gogodeals/deal/save">> -> 
 					Data = jtm:get_data(Message),
                 			[Id] = jtm:get_id(Message), 
 		                        mysql:query(Database, "insert into userdeals(deal_id, user_id) values (?,?)", 
@@ -171,8 +171,8 @@ loop(Database) ->
 							[Id]),
 
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
-		
-		                <<"deal/gogodeals/deal/remove">> -> %% From Application
+					
+			<<"deal/gogodeals/deal/remove">> -> %% From Application
 					Data = jtm:get_data(Message),
 		                        mysql:query(Database, "delete from userdeals where deal_id = ? and user_id = ?", 
 						jtm:get_id(Message) ++ jtm:get_values(Data)),
@@ -190,15 +190,15 @@ loop(Database) ->
 				{ok, ColumnNames, Rows} = 
 		      	mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
 				edm:publish(From, <<"deal/gogodeals/database/update">>, {Id, to_map(ColumnNames, Rows)}, 1);
-
-		                <<"deal/gogodeals/deal/verify">> -> 
+				
+			<<"deal/gogodeals/deal/verify">> -> 
 					[Id] = jtm:get_id(Message),
 					{ok, ColumnNames, Rows} = mysql:query(Database, 
 						"Select user_id from verify where id = ?", [Id]),
 					mysql:query(Database, "delete from verify where id = ?", [Id]),
 					mysql:query(Database, "delete from userdeals where id = ?", [Id])					
 
-	                end,
+	      end,
 			%%From ! {ok, updated},
 			loop(Database);
 		
