@@ -47,7 +47,7 @@ loop(Database) ->
 		%% Insert the content of a Message into the expected 
 		%% table in the database
 		{insert, From, Topic, Message} -> 
-			Data = jtm:get_data(Message),
+			D ata = jtm:get_data(Message),
 			[Id] = jtm:get_id(Message),		                
 			case Topic of
 				<<"deal/gogodeals/deal/new">> -> 
@@ -89,14 +89,14 @@ loop(Database) ->
 					end
 					
 
-	                end,
+	      end,
 	                loop(Database);
 	        
 	        %% Select info from the database corresponding to the 
 	        %% Topic and publish it.      
 		{select, From, Topic, Message} -> 
 			Data = jtm:get_data(Message),
-		        [Id] = jtm:get_id(Message),
+			[Id] = jtm:get_id(Message),
 			case Topic of
 		      <<"deal/gogodeals/user/info">> -> 
 		                        {ok, ColumnNames, Rows} = 
@@ -112,18 +112,17 @@ loop(Database) ->
 					{ok, ColumnNames, Rows} = 
 		                                mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/filters">>, {Id, to_map(ColumnNames, Rows)}, 1);
-
-		                
-		                <<"deal/gogodeals/client/info">> -> 
-		                        {ok, ColumnNames, Rows} = 
-			                	mysql:query(Database, "Select * From clients Where email = ? and password = ?", jtm:get_values(Data)),
+					
+				<<"deal/gogodeals/client/info">> -> 
+		      	{ok, ColumnNames, Rows} = 
+			      	mysql:query(Database, "Select * From clients Where email = ? and password = ?", jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_map(ColumnNames, Rows)}, 1);
 		                
-		                <<"deal/gogodeals/deal/info">> -> %% From Website
+		      <<"deal/gogodeals/deal/info">> -> %% From Website
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
-		                <<"deal/gogodeals/deal/fetch">> -> %% From Application 		                                
+		      <<"deal/gogodeals/deal/fetch">> -> %% From Application 		                                
 					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- Data],
 					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
 					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
@@ -143,7 +142,7 @@ loop(Database) ->
 		%% Update the content of a Message into the expected table in the database
 		{update, From, Topic, Message} ->
 			case Topic of
-		                <<"deal/gogodeals/deal/edit">> -> 
+		      <<"deal/gogodeals/deal/edit">> -> 
 					Data = jtm:get_data(Message),		                        
 					mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, 
 		                        	description = ?, duration = ?, count = ? WHERE id = ?", 

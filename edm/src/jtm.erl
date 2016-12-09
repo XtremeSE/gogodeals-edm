@@ -62,9 +62,9 @@ stupid_sort(Keys, [L|Ls]) -> stupid_sort(Keys, Ls ++ [L]).
 
 %% Return an action for the database corresponding with a message Topic
 get_action(Topic) ->
-        case Topic of
-                <<"deal/gogodeals/deal/info">> -> select;
-                <<"deal/gogodeals/deal/new">> -> insert;
+	case Topic of
+      <<"deal/gogodeals/deal/info">> -> select;
+      <<"deal/gogodeals/deal/new">> -> insert;
 		<<"deal/gogodeals/deal/edit">> -> update;
 		<<"deal/gogodeals/deal/delete">> -> delete;
 		
@@ -86,7 +86,7 @@ get_action(Topic) ->
 		<<"deal/gogodeals/user/new">> -> insert;
 		<<"deal/gogodeals/user/filter">> -> select;
 		_ -> unknown
-        end.
+	end.
 
 %% Converts a tuple of {Id, MapOfArguments} into a payload message
 to_payload({Id, MapOfArguments}) -> 
