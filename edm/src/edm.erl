@@ -7,7 +7,7 @@
 -module(edm).
 
 %% API
--export([start/1, publish/4]).
+-export([start/1, publish/4, terminate/1]).
 
 -export([init/1]).
 
@@ -44,7 +44,7 @@ init(Args) ->
 					
 					%% User
 					{<<"deal/gogodeals/deal/fetch">>, 1},
-					{<<"deals/gogodeals/deal/grocode">>, 1},
+					{<<"deal/gogodeals/deal/grocode">>, 1},
 					{<<"deal/gogodeals/user/check">>, 1},
 					{<<"deal/gogodeals/deal/save">>, 1},
 					{<<"deal/gogodeals/deal/remove">>, 1},
@@ -73,3 +73,5 @@ broker_loop(Client) ->
 	end.
 
 
+terminate(Reason) ->
+	exit({terminate, Reason}, client).

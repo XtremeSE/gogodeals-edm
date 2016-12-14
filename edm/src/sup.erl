@@ -30,17 +30,17 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
 	Database = [{host, "129.16.155.11"},{user, "root"},{password, "password"},{database, "gogodeals"}], 
-	LocalDb = [{host, "localhost"},{user, "root"},{password, "password"},{database, "gogodeals"}],
+	LocalDb = [{host, "localhost"},{user, "root"},{password, "Mammamu77"},{database, "gogodeals"}],
 
 	Prata = [{host, "54.154.153.243"},{client_id, <<"gogodealsAwesomeClient">>}, {keepalive, 0}, {proto_ver, 31}],
 	Testing = [{host, "176.10.136.208"},{client_id, <<"bob">>}, {keepalive, 0}, {proto_ver, 31}],
 	
-	{ok, { {one_for_all, 5, 10}, [
+	{ok, { {one_for_one, 30, 60}, [
 					%{db_sup, {db_sup, start_link, [LocalDb]}, transient, infinity, supervisor, [db_sup]},                                        
 					%{com_sup, {com_sup, start_link, [Prata]}, transient, infinity, supervisor, [db_sup]}
 					
-					{dbc, {dbc, start, [Database]}, permanent, brutal_kill, worker, []},
-               {prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, []}
+					{dbc, {dbc, start, [LocalDb]}, permanent, brutal_kill, worker, [dbc]},
+               {prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, [edm]}
 					%{testing, {edm, start, [Testing]}, transient, infinity, worker, []}
 		]}}.
 
@@ -48,8 +48,6 @@ init([]) ->
 %% Internal functions
 %%====================================================================
 
-start_child(mqtt) ->
-	supervisor:start_child(com_sup, []);
 	
 start_child(db) ->
 	supervisor:start_child(db_sup, []).

@@ -6,13 +6,15 @@
 -module(jtm).
 
 %% API exports
--export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1, get_filters/1]).
+-export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1, get_filters/1, put_comma/1]).
 
 
 
 %%====================================================================
 %% API functions
 %%====================================================================
+
+
 
 %% Returns an id from a RFC Deal Message Transfer message
 get_id(Message) ->
@@ -31,10 +33,11 @@ get_data_values(Message) ->
 
 %% Takes a json message and converts it into a list of tuples 
 get_data(Message) -> 
-        M = jsx:decode(Message, [return_maps]),
+   M = jsx:decode(Message, [return_maps]),
 	io:format("Decoded json map: ~p~n", [M]),
 	{ok, Data} = maps:find(<<"data">>, M),
-	maps:to_list(Data).
+	maps:to_list(Data). 
+	
 
 
 %% Return a list of values from a key value tuple
@@ -45,6 +48,8 @@ get_values([{_,V}|L]) ->
                 false -> [V] ++ get_values(L)
         end.
 
+get_values_list([X|[]]) -> maps:to_list([Y || {_,Y} <- X]);
+get_values_list([X|Xs]) -> maps:to_list([Y || {_,Y} <- X]) ++ [","] ++ get_values_list(Xs).
 
 %% Return a list of keys from a key value tuple
 get_key([{K,_}|[]]) -> binary:bin_to_list(K);
@@ -74,7 +79,7 @@ get_action(Topic) ->
 		<<"deal/gogodeals/client/delete">> -> delete;
 		
 		<<"deal/gogodeals/deal/fetch">> -> select;
-		<<"deals/gogodeals/deal/grocode">> -> select;
+		<<"deal/gogodeals/deal/grocode">> -> select;
 		<<"deal/gogodeals/deal/save">> -> update;
 		<<"deal/gogodeals/deal/remove">> -> update;
 		<<"deal/gogodeals/deal/verify">> -> update;
@@ -92,16 +97,17 @@ get_action(Topic) ->
 to_payload({Id, MapOfArguments}) -> 
         Payload = #{ id => Id, data => MapOfArguments},
 	jsx:encode(Payload).
-
-%to_payload({Id, List, Request}) ->
-%	Payload = #{ client_id => Id, list => List, request => Request},
-%	jsx:encode(Payload).
+	
 
 get_filters([]) -> [];
 get_filters(ListOfWords) -> [string:sub_word(ListOfWords, 1)] ++ get_filters(string:sub_string(ListOfWords, string:chr(ListOfWords, ","))).
-        
+
+
+put_comma([X|[]]) -> X;
+put_comma([X|Xs]) -> X ++ [$,] ++ put_comma(Xs).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
  
+

@@ -6,7 +6,7 @@
 -module(dbc).
 
 %% API exports
--export([start/1, handle_call/4]).
+-export([start/1, handle_call/4, terminate/1]).
 
 -export([init/1]).
 
@@ -50,37 +50,26 @@ loop(Database) ->
 			[Id] = jtm:get_id(Message),		                
 			case Topic of
 				<<"deal/gogodeals/deal/new">> -> 
-		                        Stmt = "INSERT INTO deals (" 
-		                                ++ jtm:get_key(Data) 
-		                                ++ ") VALUES (?,?,?,?,?,?,?,?,?,?)", %% name, description, picture, longitude, latitude, duration, count, filters, client_id
-		                        Values = jtm:get_values(Data),
-		                        mysql:query(Database, Stmt, Values);
+		      	Stmt = "INSERT INTO deals (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?,?,?,?,?,?,?)",
+		      	Values = jtm:get_values(Data),
+		         mysql:query(Database, Stmt, Values);
 		                        
-		                <<"deal/gogodeals/client/new">> -> 
-		                        mysql:query(Database, 
-		                                "INSERT INTO clients (" 
-		                                ++ jtm:get_key(Data) 
-		                                ++ ") VALUES (?,?,?,?,?)", %% name, email, password, longitude, latitude
-		                                jtm:get_values(Data)),
+		      <<"deal/gogodeals/client/new">> -> 
+		      	mysql:query(Database, "INSERT INTO clients (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?,?)", jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/new">>, {Id, true}, 1);
-		                        
-		                <<"deal/gogodeals/user/new">> -> 
-		                        mysql:query(Database, 
-		                        "INSERT INTO users (" 
-		                        ++ jtm:get_key(Data) 
-		                        ++ ") VALUES (?,?,?)", %% name, email, password
-		                        jtm:get_values(Data));
+					
+				<<"deal/gogodeals/user/new">> -> 
+		      	mysql:query(Database, "INSERT INTO users (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?)", jtm:get_values(Data));
 		                        
 				<<"deal/gogodeals/user/facebook">> ->
 					
 					case mysql:query(Database, <<"Select * From users Where email = ? and name = ?">>, jtm:get_values(Data)) of
 						
 						{ok, ColumnNames, []} ->
-							mysql:query(Database, "insert into users (" ++ jtm:get_key(Data) ++ 
-								", password) values (?,?,\"facebook\")", jtm:get_values(Data)),
+							mysql:query(Database, "insert into users (" ++ jtm:get_key(Data) ++ ", password) values (?,?,\"facebook\")", jtm:get_values(Data)),
 							{ok, ColumnNames, Rows} = 
-		                                		mysql:query(Database, <<"Select * From users Where email = ? and name = ?">>, jtm:get_values(Data)),
-								edm:publish(From, <<"deal/gogodeals/facebook/database">>, {Id, to_map(ColumnNames, Rows)}, 1);
+		               	mysql:query(Database, <<"Select * From users Where email = ? and name = ?">>, jtm:get_values(Data)),
+							edm:publish(From, <<"deal/gogodeals/facebook/database">>, {Id, to_map(ColumnNames, Rows)}, 1);
 
 						{ok, ColumnNames, Rows} -> 
 							edm:publish(From, <<"deal/gogodeals/database/facebook">>, {Id, to_map(ColumnNames, Rows)}, 1)
@@ -89,22 +78,27 @@ loop(Database) ->
 					
 
 	      end,
-	                loop(Database);
+	      loop(Database);
 	        
-	        %% Select info from the database corresponding to the 
-	        %% Topic and publish it.      
+	   %% Select info from the database corresponding to the 
+	   %% Topic and publish it.      
 		{select, From, Topic, Message} -> 
-			Data = jtm:get_data(Message),
 			[Id] = jtm:get_id(Message),
 			case Topic of
-		      <<"deal/gogodeals/user/info">> -> 
-		                        {ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
-					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
+		      <<"deal/gogodeals/user/info">> ->
+		      	Data = jtm:get_data(Message), 
+		         {ok, ColumnNames, Rows} = 
+		         	mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
+					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1),
+					
+					{ok, ColumnNames, Rows} = 
+		         	mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = (select id from users where email = ? and password = ?))">>, jtm:get_values(Data)),
+					edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_map(ColumnNames, Rows)}, 1);
 				
 				<<"deal/gogodeals/user/check">> ->
+					Data = jtm:get_data(Message),
 					{ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select * From users Where email = ?">>, jtm:get_values(Data)),
+		         	mysql:query(Database, <<"Select * From users Where email = ?">>, jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/check">>, {Id, to_map(ColumnNames, Rows)}, 1);
 
 				<<"deal/gogodeals/user/filter">> ->
@@ -112,7 +106,8 @@ loop(Database) ->
 		                                mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/filters">>, {Id, to_map(ColumnNames, Rows)}, 1);
 					
-				<<"deal/gogodeals/client/info">> -> 
+				<<"deal/gogodeals/client/info">> ->
+					Data = jtm:get_data(Message), 
 		      	{ok, ColumnNames, Rows} = 
 			      	mysql:query(Database, "Select * From clients Where email = ? and password = ?", jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_map(ColumnNames, Rows)}, 1);
@@ -121,19 +116,23 @@ loop(Database) ->
 					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where client_id = ?", [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
-		      <<"deal/gogodeals/deal/fetch">> -> %% From Application 		                                
+		      <<"deal/gogodeals/deal/fetch">> -> %% From Application
+		      	Data = jtm:get_data(Message), 		                                
 					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- Data],
 					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
 					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
 					LatMax = [V + 0.2 || {<<"latitude">>, V} <- Data],
 					Filters = [binary_to_list(V) || {<<"filters">>, V} <- Data],
-					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where longitude between ? and ? and 
-									latitude between ? and ? and filters in(?)", 
-									LongMin ++ LongMax ++ LatMin ++ LatMax ++ [Filters]),
-                			edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
+					{ok, ColumnNames, Rows} = 
+						mysql:query(Database, "Select * From deals Where longitude between ? and ? and latitude between ? and ? and filters in(?)", 
+							LongMin ++ LongMax ++ LatMin ++ LatMax ++ [Filters]),
+                	edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
-				<<"deals/gogodeals/deal/grocode">> ->
-					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where name in (?)", jtm:get_values(Data)),
+				<<"deal/gogodeals/deal/grocode">> ->
+					M = jsx:decode(Message, [return_maps]),
+					{ok, D} = maps:find(<<"data">>, M),
+					Data = lists:concat([["\"" ++ binary_to_list(Z) ++ "\"" || {_,Z} <- [maps:find(Y, X) || Y <- maps:keys(X)]] || X <- D]),
+					{ok, ColumnNames, Rows} = mysql:query(Database, "Select * From deals Where name in (" ++ jtm:put_comma(Data) ++ ")"),
 					edm:publish(From, <<"deal/gogodeals/database/grocode">>, {Id, to_deal_map(ColumnNames, Rows)}, 1)
 	   	
 	   	end,
@@ -144,31 +143,25 @@ loop(Database) ->
 			case Topic of
 		      <<"deal/gogodeals/deal/edit">> -> 
 					Data = jtm:get_data(Message),		                        
-					mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, 
-		                        	description = ?, duration = ?, count = ? WHERE id = ?", 
-						jtm:stupid_sort([<<"name">>, <<"price">>, <<"picture">>, <<"description">>, 
-							<<"duration">>, <<"count">>],Data) ++ jtm:get_id(Message));
-		
-		                <<"deal/gogodeals/client/edit">> -> 
+					mysql:query(Database, "UPDATE deals SET name = ?, price = ?, picture = ?, description = ?, duration = ?, count = ? WHERE id = ?", 
+						jtm:stupid_sort([<<"name">>, <<"price">>, <<"picture">>, <<"description">>, <<"duration">>, <<"count">>],Data) ++ jtm:get_id(Message));
+							
+				<<"deal/gogodeals/client/edit">> -> 
 					Data = jtm:get_data(Message),
-		                        mysql:query(Database, "UPDATE clients SET name = ?, longitude = ?, latitude = ?, email = ?, 
-			                        password = ? WHERE id = ?", 
+		         mysql:query(Database, "UPDATE clients SET name = ?, longitude = ?, latitude = ?, email = ?, password = ? WHERE id = ?", 
 						jtm:stupid_sort([<<"name">>,<<"longitude">>, <<"latitude">>,<<"email">>,<<"password">>], Data) ++ jtm:get_id(Message));
 		
 		   <<"deal/gogodeals/deal/save">> -> 
 					Data = jtm:get_data(Message),
-                			[Id] = jtm:get_id(Message), 
-		                        mysql:query(Database, "insert into userdeals(deal_id, user_id) values (?,?)", 
-						[Id] ++ jtm:get_values(Data)),
+               [Id] = jtm:get_id(Message), 
+		         mysql:query(Database, "insert into userdeals(deal_id, user_id) values (?,?)", [Id] ++ jtm:get_values(Data)),
 					
 					mysql:query(Database, "UPDATE deals SET count = count - 1 WHERE id = ?", [Id]),
 					
-					mysql:query(Database, "insert into verify(deal_id, user_id) values (?,?)", 
-						[Id] ++ jtm:get_values(Data)),
+					mysql:query(Database, "insert into verify(deal_id, user_id) values (?,?)", [Id] ++ jtm:get_values(Data)),
 
-					{ok, ColumnNames, Rows} = mysql:query(Database, 
-							"select deals.count, verify.id from deals, verify where deals.id = ? and verify.deal_id = deals.id", 
-							[Id]),
+					{ok, ColumnNames, Rows} = 
+						mysql:query(Database, "select deals.count, verify.id from deals, verify where deals.id = ? and verify.deal_id = deals.id", [Id]),
 
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
 					
@@ -226,5 +219,9 @@ to_deal_map(ColumnNames, [R|Rs]) -> [to_map(ColumnNames, [R])] ++ to_deal_map(Co
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
 	maps:from_list(lists:zip(ColumnNames, Rows)).
+	
+	
+terminate(Reason) ->
+	exit({terminate, Reason}, database).
 
 
