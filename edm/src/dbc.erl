@@ -104,7 +104,7 @@ loop(Database) ->
 
 				<<"deal/gogodeals/user/filter">> ->
 					{ok, ColumnNames, Rows} = 
-		                                mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
+		            mysql:query(Database, <<"Select filters From users Where id = ?">>, [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/filters">>, {Id, to_map(ColumnNames, Rows)}, 1);
 					
 				<<"deal/gogodeals/client/info">> ->
@@ -216,7 +216,7 @@ to_deal_map(_ColumnNames, []) -> #{};
 to_deal_map(ColumnNames, [R|[]]) -> [to_map(ColumnNames, [R])];
 to_deal_map(ColumnNames, [R|Rs]) -> [to_map(ColumnNames, [R])] ++ to_deal_map(ColumnNames, Rs).
 
-%to_map(_ColumnNames, []) -> #{};
+to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
 	maps:from_list(lists:zip(ColumnNames, Rows)).
