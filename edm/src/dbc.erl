@@ -92,9 +92,15 @@ loop(Database) ->
 					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
 					
 				<<"deal/gogodeals/deal/grabbed">> ->
-					{ok, ColumnNames, Rows} = 
-		         	mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = ?)">>, [Id]),
-					edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_map(ColumnNames, Rows)}, 1);
+		         case mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = ?)">>, [Id]) of
+		         
+		         	{ok, ColumnNames, []} -> 
+							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, #{ yo => dude}, 1);
+						
+						{ok, ColumnNames, Rows} -> 
+							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_map(ColumnNames, Rows)}, 1)
+					
+					end;
 				
 				<<"deal/gogodeals/user/check">> ->
 					Data = jtm:get_data(Message),
@@ -216,7 +222,7 @@ to_deal_map(_ColumnNames, []) -> #{};
 to_deal_map(ColumnNames, [R|[]]) -> [to_map(ColumnNames, [R])];
 to_deal_map(ColumnNames, [R|Rs]) -> [to_map(ColumnNames, [R])] ++ to_deal_map(ColumnNames, Rs).
 
-to_map(_ColumnNames, []) -> #{};
+%to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
 	maps:from_list(lists:zip(ColumnNames, Rows)).
