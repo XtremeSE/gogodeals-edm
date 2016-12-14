@@ -95,7 +95,7 @@ loop(Database) ->
 		         case mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = ?)">>, [Id]) of
 		         
 		         	{ok, ColumnNames, []} -> 
-							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, #{ yo => dude}, 1);
+							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, #{ yo => dude}}, 1);
 						
 						{ok, ColumnNames, Rows} -> 
 							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_map(ColumnNames, Rows)}, 1)
