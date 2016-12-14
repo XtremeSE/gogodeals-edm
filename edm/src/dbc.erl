@@ -91,8 +91,9 @@ loop(Database) ->
 		         	mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1),
 					
+				<<"deal/gogodeals/deal/grabbed">> ->
 					{ok, ColumnNames, Rows} = 
-		         	mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = (select id from users where email = ? and password = ?))">>, jtm:get_values(Data)),
+		         	mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = ?)">>, [Id]),
 					edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_map(ColumnNames, Rows)}, 1);
 				
 				<<"deal/gogodeals/user/check">> ->

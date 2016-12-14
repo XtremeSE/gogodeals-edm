@@ -34,7 +34,7 @@ init(Args) ->
 	link(Client),	
 	emqttc:subscribe(Client, [	%% Client/Customer
 					{<<"deal/gogodeals/deal/info">>, 1},
-				        {<<"deal/gogodeals/deal/new">>, 1},
+				   {<<"deal/gogodeals/deal/new">>, 1},
 					{<<"deal/gogodeals/deal/edit">>, 1},
 					{<<"deal/gogodeals/deal/delete">>, 1},
 					{<<"deal/gogodeals/client/info">>, 1},
@@ -53,6 +53,7 @@ init(Args) ->
 					{<<"deal/gogodeals/user/new">>, 1},
 					{<<"deal/gogodeals/user/facebook">>,1},
 					{<<"deal/gogodeals/user/update">>,1},
+					{<<"deal/gogodeals/deal/grabbed">>,1},
 					{<<"deal/gogodeals/user/filter">>, 1}]),
         broker_loop(Client),
 	register(client, Client),
