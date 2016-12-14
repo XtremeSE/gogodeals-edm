@@ -92,15 +92,9 @@ loop(Database) ->
 					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
 					
 				<<"deal/gogodeals/deal/grabbed">> ->
-		         case mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = ?)">>, [Id]) of
-		         
-		         	{ok, ColumnNames, []} -> 
-							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, #{ yo => dude}}, 1);
-						
-						{ok, ColumnNames, Rows} -> 
-							edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_map(ColumnNames, Rows)}, 1)
-					
-					end;
+		         {ok, ColumnNames, Rows} =
+		         	mysql:query(Database, <<"Select * From deals Where id in (select deal_id from userdeals where user_id = ?)">>, [Id]), 
+					edm:publish(From, <<"deal/gogodeals/database/grabbed">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 				
 				<<"deal/gogodeals/user/check">> ->
 					Data = jtm:get_data(Message),
