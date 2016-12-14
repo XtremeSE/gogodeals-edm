@@ -89,7 +89,7 @@ loop(Database) ->
 		      	Data = jtm:get_data(Message), 
 		         {ok, ColumnNames, Rows} = 
 		         	mysql:query(Database, <<"Select * From users Where email = ? and password = ?">>, jtm:get_values(Data)),
-					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1),
+					edm:publish(From, <<"deal/gogodeals/database/users">>, {Id, to_map(ColumnNames, Rows)}, 1);
 					
 				<<"deal/gogodeals/deal/grabbed">> ->
 					{ok, ColumnNames, Rows} = 
