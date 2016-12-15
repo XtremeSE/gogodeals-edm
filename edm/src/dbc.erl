@@ -120,10 +120,10 @@ loop(Database) ->
 		      <<"deal/gogodeals/deal/fetch">> -> %% From Application
 		      	M = jsx:decode(Message, [return_maps]),
 					{ok, D} = maps:find(<<"data">>, M), 		                                
-					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- D],
-					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- D],
-					LatMin = [V - 0.2 || {<<"latitude">>, V} <- D],
-					LatMax = [V + 0.2 || {<<"latitude">>, V} <- D],
+					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- maps:to_list(D)],
+					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- maps:to_list(D)],
+					LatMin = [V - 0.2 || {<<"latitude">>, V} <- maps:to_list(D)],
+					LatMax = [V + 0.2 || {<<"latitude">>, V} <- maps:to_list(D)],
 					{ok, F} = maps:find(<<"filters">>, D),
 					Filters = lists:concat([["\"" ++ binary_to_list(Z) ++ "\"" || {_,Z} <- [maps:find(Y, X) || Y <- maps:keys(X)]] || X <- F]),
 					{ok, ColumnNames, Rows} = 
