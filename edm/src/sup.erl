@@ -40,8 +40,8 @@ init([]) ->
 					%{com_sup, {com_sup, start_link, [Prata]}, transient, infinity, supervisor, [db_sup]}
 					
 					{dbc, {dbc, start, [Database]}, permanent, brutal_kill, worker, [dbc]},
-               %{prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, [edm]}
-					{testing, {edm, start, [Testing]}, transient, infinity, worker, []}
+               {prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, [edm]}
+					%{testing, {edm, start, [Testing]}, transient, infinity, worker, []}
 		]}}.
 
 %%====================================================================

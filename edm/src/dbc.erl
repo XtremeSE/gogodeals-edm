@@ -118,15 +118,17 @@ loop(Database) ->
 					edm:publish(From, <<"deal/gogodeals/database/clients">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
 		      <<"deal/gogodeals/deal/fetch">> -> %% From Application
-		      	Data = jtm:get_data(Message), 		                                
-					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- Data],
-					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- Data],
-					LatMin = [V - 0.2 || {<<"latitude">>, V} <- Data],
-					LatMax = [V + 0.2 || {<<"latitude">>, V} <- Data],
-					Filters = [binary_to_list(V) || {<<"filters">>, V} <- Data],
+		      	M = jsx:decode(Message, [return_maps]),
+					{ok, D} = maps:find(<<"data">>, M), 		                                
+					LongMin = [ V - 0.2 || {<<"longitude">>, V} <- D],
+					LongMax = [ V + 0.2 || {<<"longitude">>, V} <- D],
+					LatMin = [V - 0.2 || {<<"latitude">>, V} <- D],
+					LatMax = [V + 0.2 || {<<"latitude">>, V} <- D],
+					{ok, F} = maps:find(<<"filters">>, D),
+					Filters = lists:concat([["\"" ++ binary_to_list(Z) ++ "\"" || {_,Z} <- [maps:find(Y, X) || Y <- maps:keys(X)]] || X <- F]),
 					{ok, ColumnNames, Rows} = 
-						mysql:query(Database, "Select * From deals Where longitude between ? and ? and latitude between ? and ? and filters in(?)", 
-							LongMin ++ LongMax ++ LatMin ++ LatMax ++ [Filters]),
+						mysql:query(Database, "Select * From deals Where longitude between ? and ? and latitude between ? and ? and filters in(" ++ jtm:put_comma(Filters) ++ ")", 
+							LongMin ++ LongMax ++ LatMin ++ LatMax),
                 	edm:publish(From, <<"deal/gogodeals/database/deals">>, {Id, to_deal_map(ColumnNames, Rows)}, 1);
 
 				<<"deal/gogodeals/deal/grocode">> ->
