@@ -166,7 +166,7 @@ loop(Database) ->
 					{ok, ColumnNames, Rows} = 
 						mysql:query(Database, "select deals.count, verify.id from deals, verify where deals.id = ? and verify.deal_id = deals.id", [Id]),
 
-					[User_Id] = jtm:get_data_values(Data),
+					[User_Id] = jtm:get_data_values(Message),
 					edm:publish(From, <<"deal/gogodeals/database/info">>, {User_Id, to_map(ColumnNames, Rows)}, 1);
 					
 			<<"deal/gogodeals/deal/remove">> -> %% From Application
