@@ -166,7 +166,8 @@ loop(Database) ->
 					{ok, ColumnNames, Rows} = 
 						mysql:query(Database, "select deals.count, verify.id from deals, verify where deals.id = ? and verify.deal_id = deals.id", [Id]),
 
-					edm:publish(From, <<"deal/gogodeals/database/info">>, {Id, to_map(ColumnNames, Rows)}, 1);
+					[User_Id] = jtm:get_values(Data),
+					edm:publish(From, <<"deal/gogodeals/database/info">>, {User_Id, to_map(ColumnNames, Rows)}, 1);
 					
 			<<"deal/gogodeals/deal/remove">> -> %% From Application
 					Data = jtm:get_data(Message),
@@ -218,7 +219,7 @@ to_deal_map(_ColumnNames, []) -> #{};
 to_deal_map(ColumnNames, [R|[]]) -> [to_map(ColumnNames, [R])];
 to_deal_map(ColumnNames, [R|Rs]) -> [to_map(ColumnNames, [R])] ++ to_deal_map(ColumnNames, Rs).
 
-%to_map(_ColumnNames, []) -> #{};
+to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
 	maps:from_list(lists:zip(ColumnNames, Rows)).
