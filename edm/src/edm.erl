@@ -15,7 +15,10 @@
 %% API functions
 %%====================================================================
 
-%% Start a connection to a broker
+%% Start a connection to a broker with the emqttc library
+%% Takes a list of arguments with the form
+%% [{host, "54.154.153.243"},{client_id, <<"gogodealsAwesomeClient">>}, {keepalive, 0}, {proto_ver, 31}]
+%% For complete list of parameters see the emqttc API
 start(Args) -> init(Args).
 
 %% Publish messages to the broker
@@ -33,7 +36,7 @@ init(Args) ->
 	process_flag(trap_exit, true),	
 	link(Client),	
 	emqttc:subscribe(Client, [	
-					%% Client/Customer
+					%% Topics originating from the Client/Customer
 					{<<"deal/gogodeals/deal/info">>, 1},
 				   {<<"deal/gogodeals/deal/new">>, 1},
 					{<<"deal/gogodeals/deal/edit">>, 1},
@@ -43,7 +46,7 @@ init(Args) ->
 					{<<"deal/gogodeals/client/edit">>, 1},
 					{<<"deal/gogodeals/client/delete">>, 1},
 					
-					%% User
+					%% Topics originating from the User
 					{<<"deal/gogodeals/deal/fetch">>, 1},
 					{<<"deal/gogodeals/deal/grocode">>, 1},
 					{<<"deal/gogodeals/user/check">>, 1},

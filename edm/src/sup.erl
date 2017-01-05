@@ -37,7 +37,6 @@ init([]) ->
 	{ok, { {one_for_one, 30, 60}, [
 		{dbc, {dbc, start, [Database]}, permanent, brutal_kill, worker, [dbc]},
       {prata, {edm, start, [Prata]}, permanent, brutal_kill, worker, [edm]}
-		%{testing, {edm, start, [Testing]}, transient, infinity, worker, []}
 	]}}.
 
 
