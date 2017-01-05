@@ -6,15 +6,11 @@
 -module(jtm).
 
 %% API exports
--export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1, get_filters/1, put_comma/1]).
-
-
+-export([get_id/1, get_data_values/1, get_data/1, get_values/1, get_key/1, stupid_sort/2, get_action/1, to_payload/1, put_comma/1]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
-
-
 
 %% Returns an id from a RFC Deal Message Transfer message
 get_id(Message) ->
@@ -48,9 +44,6 @@ get_values([{_,V}|L]) ->
                 false -> [V] ++ get_values(L)
         end.
 
-get_values_list([X|[]]) -> maps:to_list([Y || {_,Y} <- X]);
-get_values_list([X|Xs]) -> maps:to_list([Y || {_,Y} <- X]) ++ [","] ++ get_values_list(Xs).
-
 %% Return a list of keys from a key value tuple
 get_key([{K,_}|[]]) -> binary:bin_to_list(K);
 get_key([{K,_}|Xs]) -> binary:bin_to_list(K) ++ ", " ++ get_key(Xs).
@@ -60,7 +53,7 @@ get_key([{K,_}|Xs]) -> binary:bin_to_list(K) ++ ", " ++ get_key(Xs).
 %% of tuples with the keys of the Key list
 stupid_sort([], []) -> [];
 stupid_sort([K|[]], [{K,V}|[]]) -> [V];
-stupid_sort([K|Ks], [{K,V}|[]]) -> [V];
+stupid_sort([K|_], [{K,V}|[]]) -> [V];
 stupid_sort([K|Ks], [{K,V}|Ls]) -> [V|stupid_sort(Ks, Ls)];
 stupid_sort(Keys, [L|Ls]) -> stupid_sort(Keys, Ls ++ [L]).
 
@@ -99,16 +92,8 @@ to_payload({Id, MapOfArguments}) ->
         Payload = #{ id => Id, data => MapOfArguments},
 	jsx:encode(Payload).
 	
-
-get_filters([]) -> [];
-get_filters(ListOfWords) -> [string:sub_word(ListOfWords, 1)] ++ get_filters(string:sub_string(ListOfWords, string:chr(ListOfWords, ","))).
-
-
+%% Put a comma between characters in a string
 put_comma([X|[]]) -> X;
 put_comma([X|Xs]) -> X ++ [$,] ++ put_comma(Xs).
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
- 
 

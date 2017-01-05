@@ -20,7 +20,7 @@ start(Args) -> init(Args).
 
 %% Publish messages to the broker
 publish(From, Topic, Message, Qos) ->
-        Payload = jtm:to_payload(Message),
+	Payload = jtm:to_payload(Message),
 	emqttc:publish(From, Topic, Payload, [{qos, Qos}]),
 	io:format("Step: ~p~n", ["4"]).
 
@@ -32,7 +32,8 @@ init(Args) ->
 	{ok, Client} = emqttc:start_link(Args),
 	process_flag(trap_exit, true),	
 	link(Client),	
-	emqttc:subscribe(Client, [	%% Client/Customer
+	emqttc:subscribe(Client, [	
+					%% Client/Customer
 					{<<"deal/gogodeals/deal/info">>, 1},
 				   {<<"deal/gogodeals/deal/new">>, 1},
 					{<<"deal/gogodeals/deal/edit">>, 1},
@@ -63,13 +64,13 @@ init(Args) ->
 broker_loop(Client) ->
 	receive
  	
-	        %% Receive messages from subscribed topics
-                {publish, Topic, Payload} ->
-		        dbc:handle_call(jtm:get_action(Topic), Client, Topic, Payload),
-                        broker_loop(Client);
+ 		%% Receive messages from subscribed topics
+ 		{publish, Topic, Payload} ->
+ 			dbc:handle_call(jtm:get_action(Topic), Client, Topic, Payload),
+         broker_loop(Client);
 
-                %% Stop the loop as a part of stopping the client
-                stop -> exit(broker, normal)
+		%% Stop the loop as a part of stopping the client
+      stop -> exit(broker, normal)
                         
 	end.
 

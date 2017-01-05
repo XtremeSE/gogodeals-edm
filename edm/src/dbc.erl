@@ -15,6 +15,9 @@
 %%====================================================================
 
 %% Start a connection to a MySQL database
+%% Takes a list of arguments with the form
+%% [{host, "1.1.1.1"},{user, "test"},{password, "test"},{database, "test"}]
+%% For complete list of parameters see the mysql-otp API
 start(Args) -> init(Args).
 
 %% Send a message to the database consisting of:
@@ -49,20 +52,28 @@ loop(Database) ->
 			Data = jtm:get_data(Message),
 			[Id] = jtm:get_id(Message),		                
 			case Topic of
+				%% Insert new deal into the database
+				%% In line with PRATA RFC 15 Add Deal
 				<<"deal/gogodeals/deal/new">> -> 
 		      	Stmt = "INSERT INTO deals (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?,?,?,?,?,?,?)",
 		      	Values = jtm:get_values(Data),
 		         mysql:query(Database, Stmt, Values);
 		                        
+		      %% Insert new client into the database
+		      %% Publish "true" to the callers id.
 		      <<"deal/gogodeals/client/new">> -> 
 		      	mysql:query(Database, "INSERT INTO clients (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?,?,?)", jtm:get_values(Data)),
 					edm:publish(From, <<"deal/gogodeals/database/new">>, {Id, true}, 1);
 					
+				%% Insert new user into the database
 				<<"deal/gogodeals/user/new">> -> 
 		      	mysql:query(Database, "INSERT INTO users (" ++ jtm:get_key(Data) ++ ") VALUES (?,?,?)", jtm:get_values(Data));
 		                        
+		      %% Insert new user (with facebook credentials) into the database
 				<<"deal/gogodeals/user/facebook">> ->
 					
+					%% Only inserts new user if the user doesnt already exist in the db.
+					%% Publish the user id to the callers id.
 					case mysql:query(Database, <<"Select * From users Where email = ? and name = ?">>, jtm:get_values(Data)) of
 						
 						{ok, ColumnNames, []} ->
@@ -190,24 +201,21 @@ loop(Database) ->
 				
 			<<"deal/gogodeals/deal/verify">> -> 
 					[Id] = jtm:get_id(Message),
-					{ok, ColumnNames, Rows} = mysql:query(Database, 
-						"Select user_id from verify where id = ?", [Id]),
 					mysql:query(Database, "delete from verify where id = ?", [Id]),
 					mysql:query(Database, "delete from userdeals where id = ?", [Id])					
 
 	      end,
-			%%From ! {ok, updated},
 			loop(Database);
 		
 		%% Delete data in the database according to the content of the Message
 		{delete, _From, Topic, Message} -> 
 			case Topic of
-		                <<"deal/gogodeals/client/delete">> -> 
-		                        mysql:query(Database, "DELETE FROM clients WHERE id = ?", jtm:get_id(Message));
+		   	<<"deal/gogodeals/client/delete">> -> 
+		      	mysql:query(Database, "DELETE FROM clients WHERE id = ?", jtm:get_id(Message));
 		
-		                <<"deal/gogodeals/deal/delete">> -> 
-		                        mysql:query(Database, "DELETE FROM deals WHERE id = ?", jtm:get_id(Message))
-	                end,
+		   	<<"deal/gogodeals/deal/delete">> -> 
+		   		mysql:query(Database, "DELETE FROM deals WHERE id = ?", jtm:get_id(Message))
+	      end,
 			loop(Database);
 		
 		_ -> loop(Database)
@@ -219,6 +227,7 @@ to_deal_map(_ColumnNames, []) -> #{};
 to_deal_map(ColumnNames, [R|[]]) -> [to_map(ColumnNames, [R])];
 to_deal_map(ColumnNames, [R|Rs]) -> [to_map(ColumnNames, [R])] ++ to_deal_map(ColumnNames, Rs).
 
+%% Convert a list of ColumnNames and a Row into a map
 to_map(_ColumnNames, []) -> #{};
 to_map(ColumnNames, [Rows]) -> 
 	io:format("Step: ~p~n", ["3"]),	
